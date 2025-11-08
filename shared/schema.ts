@@ -38,3 +38,18 @@ export const generateSuggestionsResponseSchema = z.object({
 
 export type GenerateSuggestionsResponse = z.infer<typeof generateSuggestionsResponseSchema>;
 export type Suggestion = z.infer<typeof suggestionSchema>;
+
+export const autoGeneratePromptSchema = z.object({
+  basicPrompt: z.string().min(1).refine(
+    (val) => val.trim().split(/\s+/).filter(word => word.length > 0).length >= 3,
+    { message: "Basic prompt must contain at least 3 words" }
+  ),
+});
+
+export type AutoGeneratePromptRequest = z.infer<typeof autoGeneratePromptSchema>;
+
+export const autoGeneratePromptResponseSchema = z.object({
+  generatedPrompt: z.string(),
+});
+
+export type AutoGeneratePromptResponse = z.infer<typeof autoGeneratePromptResponseSchema>;
