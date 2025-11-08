@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import Hero from "@/components/Hero";
 import PromptEditor from "@/components/PromptEditor";
@@ -37,7 +37,13 @@ export default function Home() {
   const [customSuggestions, setCustomSuggestions] = useState<Record<string, Enhancement[]>>({});
   const [mode, setMode] = useState<Mode>("simple");
   const [refreshingCategories, setRefreshingCategories] = useState<Set<CategoryId>>(new Set());
+  // Track the prompt state before each category's enhancement was applied
+  const [promptBeforeCategory, setPromptBeforeCategory] = useState<Record<CategoryId, string>>({});
   const { toast } = useToast();
+  
+  // Refs for debounced history tracking
+  const pendingHistorySave = useRef<NodeJS.Timeout | null>(null);
+  const isAIUpdate = useRef(false);
 
   const enhanceMutation = useMutation({
     mutationFn: async (request: EnhancePromptRequest) => {
@@ -103,12 +109,11 @@ export default function Home() {
       });
     },
     onSuccess: (data) => {
+      isAIUpdate.current = true;
       addToHistory(data.generatedPrompt);
       setCurrentPrompt(data.generatedPrompt);
-      toast({
-        title: "Prompt generated",
-        description: "Your basic idea has been expanded into a cinematic prompt",
-      });
+      // Note: Auto-generate intentionally does not show success toasts.
+      // Only error toasts are displayed. The prompt update provides sufficient feedback.
     },
     onError: (error) => {
       toast({
@@ -131,19 +136,64 @@ export default function Home() {
     setHistoryIndex(newHistory.length - 1);
   }, [history, historyIndex]);
 
+  // Note: Filter applications (individual enhancements) intentionally do not show success toasts.
+  // Only error toasts are displayed. The visual feedback (checkmark on applied cards) is sufficient.
   const handleEnhancementClick = async (enhancement: Enhancement) => {
     const newApplied = new Set(appliedEnhancements);
+    
+    // If clicking an already applied enhancement, remove it
     if (newApplied.has(enhancement.id)) {
       newApplied.delete(enhancement.id);
       setAppliedEnhancements(newApplied);
+      
+      // Restore prompt to state before this category's enhancement was applied
+      if (promptBeforeCategory[enhancement.category] !== undefined) {
+        const restoredPrompt = promptBeforeCategory[enhancement.category];
+        isAIUpdate.current = true;
+        addToHistory(restoredPrompt);
+        setCurrentPrompt(restoredPrompt);
+        // Clear the tracking for this category since no enhancement is applied
+        setPromptBeforeCategory(prev => {
+          const updated = { ...prev };
+          delete updated[enhancement.category];
+          return updated;
+        });
+      }
       return;
     }
     
+    // Check if there's already an enhancement from the same category
+    const categoryEnhancements = customSuggestions[enhancement.category] || ENHANCEMENTS[enhancement.category] || [];
+    const existingEnhancementId = Array.from(newApplied).find(id => {
+      // Check if this ID belongs to an enhancement from the same category
+      return categoryEnhancements.some(e => e.id === id);
+    });
+    
+    // If there's an existing enhancement from the same category, remove it
+    if (existingEnhancementId) {
+      newApplied.delete(existingEnhancementId);
+    }
+    
+    // Add the new enhancement
     newApplied.add(enhancement.id);
     setAppliedEnhancements(newApplied);
     
+    // Determine the base prompt: if replacing, use the prompt before the previous enhancement
+    // Otherwise, use the current prompt
+    const basePrompt = existingEnhancementId && promptBeforeCategory[enhancement.category] !== undefined
+      ? promptBeforeCategory[enhancement.category]
+      : currentPrompt;
+    
+    // Store the prompt state before applying this category's enhancement (if not already stored)
+    if (!promptBeforeCategory[enhancement.category]) {
+      setPromptBeforeCategory(prev => ({
+        ...prev,
+        [enhancement.category]: currentPrompt,
+      }));
+    }
+    
     const request: EnhancePromptRequest = {
-      currentPrompt,
+      currentPrompt: basePrompt,
       enhancement: {
         title: enhancement.title,
         description: enhancement.description,
@@ -152,25 +202,50 @@ export default function Home() {
     };
     
     const result = await enhanceMutation.mutateAsync(request);
+    isAIUpdate.current = true;
     addToHistory(result.enhancedPrompt);
     setCurrentPrompt(result.enhancedPrompt);
+    
+    // Update the prompt before this category for future replacements
+    // Only update if we're replacing (not if it's the first time)
+    if (existingEnhancementId) {
+      setPromptBeforeCategory(prev => ({
+        ...prev,
+        [enhancement.category]: basePrompt,
+      }));
+    }
   };
 
   const handleUndo = () => {
+    // Clear any pending debounced save
+    if (pendingHistorySave.current) {
+      clearTimeout(pendingHistorySave.current);
+      pendingHistorySave.current = null;
+    }
+    
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
       setHistoryIndex(newIndex);
+      isAIUpdate.current = true;
       setCurrentPrompt(history[newIndex].prompt);
     } else if (historyIndex === 0) {
       setHistoryIndex(-1);
+      isAIUpdate.current = true;
       setCurrentPrompt("");
     }
   };
 
   const handleRedo = () => {
+    // Clear any pending debounced save
+    if (pendingHistorySave.current) {
+      clearTimeout(pendingHistorySave.current);
+      pendingHistorySave.current = null;
+    }
+    
     if (historyIndex < history.length - 1) {
       const newIndex = historyIndex + 1;
       setHistoryIndex(newIndex);
+      isAIUpdate.current = true;
       setCurrentPrompt(history[newIndex].prompt);
     }
   };
@@ -196,6 +271,13 @@ export default function Home() {
     });
     setAppliedEnhancements(newApplied);
     
+    // Clear the prompt tracking for this category
+    setPromptBeforeCategory(prev => {
+      const updated = { ...prev };
+      delete updated[targetCategory];
+      return updated;
+    });
+    
     generateSuggestionsMutation.mutate({
       category: targetCategory,
       count: 8,
@@ -206,14 +288,41 @@ export default function Home() {
   const handlePresetSelect = async (preset: Preset) => {
     let updatedPrompt = currentPrompt;
     const presetEnhancementIds: string[] = [];
+    const newApplied = new Set(appliedEnhancements);
     
+    // Remove any existing enhancements from categories that the preset will apply to
+    const presetCategories = new Set(preset.enhancements.map(e => e.category));
+    
+    presetCategories.forEach(category => {
+      const categoryEnhancements = customSuggestions[category] || ENHANCEMENTS[category] || [];
+      Array.from(newApplied).forEach(id => {
+        if (categoryEnhancements.some(e => e.id === id)) {
+          newApplied.delete(id);
+        }
+      });
+    });
+    
+    // Apply each enhancement from the preset
     for (let i = 0; i < preset.enhancements.length; i++) {
       const enhancement = preset.enhancements[i];
       const enhancementId = `preset-${preset.id}-${i}`;
       presetEnhancementIds.push(enhancementId);
       
+      // Determine base prompt: use the prompt before this category's enhancement if replacing
+      const basePrompt = promptBeforeCategory[enhancement.category] !== undefined
+        ? promptBeforeCategory[enhancement.category]
+        : updatedPrompt;
+      
+      // Store the prompt state before applying this category's enhancement (if not already stored)
+      if (!promptBeforeCategory[enhancement.category]) {
+        setPromptBeforeCategory(prev => ({
+          ...prev,
+          [enhancement.category]: updatedPrompt,
+        }));
+      }
+      
       const request: EnhancePromptRequest = {
-        currentPrompt: updatedPrompt,
+        currentPrompt: basePrompt,
         enhancement: {
           title: enhancement.title,
           description: enhancement.description,
@@ -224,6 +333,12 @@ export default function Home() {
       try {
         const result = await enhanceMutation.mutateAsync(request);
         updatedPrompt = result.enhancedPrompt;
+        
+        // Update tracking for this category
+        setPromptBeforeCategory(prev => ({
+          ...prev,
+          [enhancement.category]: basePrompt,
+        }));
       } catch (error) {
         console.error("Failed to apply preset enhancement:", error);
         break;
@@ -232,16 +347,14 @@ export default function Home() {
     
     if (updatedPrompt !== currentPrompt) {
       // Mark preset enhancements as applied
-      const newApplied = new Set(appliedEnhancements);
       presetEnhancementIds.forEach(id => newApplied.add(id));
       setAppliedEnhancements(newApplied);
       
+      isAIUpdate.current = true;
       addToHistory(updatedPrompt);
       setCurrentPrompt(updatedPrompt);
-      toast({
-        title: "Preset applied",
-        description: `${preset.name} style added to your prompt`,
-      });
+      // Note: Preset applications intentionally do not show success toasts.
+      // Only error toasts are displayed. The prompt update provides sufficient feedback.
     }
   };
 
@@ -255,10 +368,36 @@ export default function Home() {
 
   const handlePromptChange = (value: string) => {
     setCurrentPrompt(value);
-    if (value && value !== (history[historyIndex]?.prompt || "")) {
-      addToHistory(value);
+    
+    // Clear any pending debounced save
+    if (pendingHistorySave.current) {
+      clearTimeout(pendingHistorySave.current);
+      pendingHistorySave.current = null;
+    }
+    
+    // Only debounce manual typing, not AI updates
+    if (!isAIUpdate.current) {
+      // Set up debounced history save (3 seconds)
+      pendingHistorySave.current = setTimeout(() => {
+        if (value && value !== (history[historyIndex]?.prompt || "")) {
+          addToHistory(value);
+        }
+        pendingHistorySave.current = null;
+      }, 3000);
+    } else {
+      // Reset the flag after AI update
+      isAIUpdate.current = false;
     }
   };
+
+  // Cleanup effect to clear pending timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (pendingHistorySave.current) {
+        clearTimeout(pendingHistorySave.current);
+      }
+    };
+  }, []);
 
   const wordCount = useMemo(() => {
     return currentPrompt.trim().split(/\s+/).filter(word => word.length > 0).length;
@@ -313,7 +452,13 @@ export default function Home() {
                     <button
                       key={entry.timestamp}
                       onClick={() => {
+                        // Clear any pending debounced save
+                        if (pendingHistorySave.current) {
+                          clearTimeout(pendingHistorySave.current);
+                          pendingHistorySave.current = null;
+                        }
                         setHistoryIndex(index);
+                        isAIUpdate.current = true;
                         setCurrentPrompt(entry.prompt);
                       }}
                       className={`w-full text-left p-2 rounded text-xs hover-elevate transition-colors ${
