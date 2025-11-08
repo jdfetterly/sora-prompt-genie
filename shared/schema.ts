@@ -1,18 +1,39 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+export const enhancePromptSchema = z.object({
+  currentPrompt: z.string(),
+  enhancement: z.object({
+    title: z.string(),
+    description: z.string(),
+    category: z.string(),
+  }),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export type EnhancePromptRequest = z.infer<typeof enhancePromptSchema>;
+
+export const enhancePromptResponseSchema = z.object({
+  enhancedPrompt: z.string(),
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export type EnhancePromptResponse = z.infer<typeof enhancePromptResponseSchema>;
+
+export const generateSuggestionsSchema = z.object({
+  category: z.string(),
+  count: z.number().min(1).max(20).default(8),
+});
+
+export type GenerateSuggestionsRequest = z.infer<typeof generateSuggestionsSchema>;
+
+export const suggestionSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  category: z.string(),
+});
+
+export const generateSuggestionsResponseSchema = z.object({
+  suggestions: z.array(suggestionSchema),
+});
+
+export type GenerateSuggestionsResponse = z.infer<typeof generateSuggestionsResponseSchema>;
+export type Suggestion = z.infer<typeof suggestionSchema>;

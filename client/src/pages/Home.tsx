@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useMutation } from "@tanstack/react-query";
 import Hero from "@/components/Hero";
 import PromptEditor from "@/components/PromptEditor";
 import ActionBar from "@/components/ActionBar";
@@ -8,6 +9,9 @@ import StarterPrompts from "@/components/StarterPrompts";
 import { ENHANCEMENTS } from "@/lib/enhancements";
 import type { Enhancement } from "@/components/EnhancementCard";
 import { Card } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import type { EnhancePromptRequest, EnhancePromptResponse, GenerateSuggestionsRequest, GenerateSuggestionsResponse } from "@shared/schema";
 
 interface PromptHistoryEntry {
   prompt: string;
@@ -20,6 +24,54 @@ export default function Home() {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [appliedEnhancements, setAppliedEnhancements] = useState<Set<string>>(new Set());
   const [currentCategory, setCurrentCategory] = useState<CategoryId>("camera-angles");
+  const [customSuggestions, setCustomSuggestions] = useState<Record<string, Enhancement[]>>({});
+  const { toast } = useToast();
+
+  const enhanceMutation = useMutation({
+    mutationFn: async (request: EnhancePromptRequest) => {
+      const response = await apiRequest<EnhancePromptResponse>("/api/enhance-prompt", {
+        method: "POST",
+        body: JSON.stringify(request),
+        headers: { "Content-Type": "application/json" },
+      });
+      return response;
+    },
+    onError: (error) => {
+      toast({
+        title: "Enhancement failed",
+        description: error instanceof Error ? error.message : "Failed to enhance prompt with AI",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const generateSuggestionsMutation = useMutation({
+    mutationFn: async (request: GenerateSuggestionsRequest) => {
+      const response = await apiRequest<GenerateSuggestionsResponse>("/api/generate-suggestions", {
+        method: "POST",
+        body: JSON.stringify(request),
+        headers: { "Content-Type": "application/json" },
+      });
+      return response;
+    },
+    onSuccess: (data, variables) => {
+      setCustomSuggestions(prev => ({
+        ...prev,
+        [variables.category]: data.suggestions,
+      }));
+      toast({
+        title: "Suggestions refreshed",
+        description: "New AI-generated suggestions are ready",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to generate suggestions",
+        description: error instanceof Error ? error.message : "Could not generate new suggestions",
+        variant: "destructive",
+      });
+    },
+  });
 
   const addToHistory = useCallback((prompt: string) => {
     const newEntry: PromptHistoryEntry = {
@@ -33,9 +85,7 @@ export default function Home() {
     setHistoryIndex(newHistory.length - 1);
   }, [history, historyIndex]);
 
-  const handleEnhancementClick = (enhancement: Enhancement) => {
-    console.log('Enhancement clicked:', enhancement.title);
-    
+  const handleEnhancementClick = async (enhancement: Enhancement) => {
     const newApplied = new Set(appliedEnhancements);
     if (newApplied.has(enhancement.id)) {
       newApplied.delete(enhancement.id);
@@ -46,15 +96,18 @@ export default function Home() {
     newApplied.add(enhancement.id);
     setAppliedEnhancements(newApplied);
     
-    let enhancedPrompt = currentPrompt;
-    if (!enhancedPrompt) {
-      enhancedPrompt = enhancement.description;
-    } else {
-      enhancedPrompt = `${currentPrompt}. ${enhancement.title}: ${enhancement.description}`;
-    }
+    const request: EnhancePromptRequest = {
+      currentPrompt,
+      enhancement: {
+        title: enhancement.title,
+        description: enhancement.description,
+        category: enhancement.category,
+      },
+    };
     
-    addToHistory(enhancedPrompt);
-    setCurrentPrompt(enhancedPrompt);
+    const result = await enhanceMutation.mutateAsync(request);
+    addToHistory(result.enhancedPrompt);
+    setCurrentPrompt(result.enhancedPrompt);
   };
 
   const handleUndo = () => {
@@ -85,7 +138,10 @@ export default function Home() {
   };
 
   const handleRefresh = () => {
-    console.log('Refresh suggestions for', currentCategory);
+    generateSuggestionsMutation.mutate({
+      category: currentCategory,
+      count: 8,
+    });
   };
 
   const handleStarterPromptSelect = (prompt: string) => {
@@ -101,7 +157,7 @@ export default function Home() {
   };
 
   const currentCategoryLabel = CATEGORIES.find(c => c.id === currentCategory)?.label || "";
-  const currentEnhancements = ENHANCEMENTS[currentCategory] || [];
+  const currentEnhancements = customSuggestions[currentCategory] || ENHANCEMENTS[currentCategory] || [];
 
   return (
     <div className="min-h-screen bg-background">
