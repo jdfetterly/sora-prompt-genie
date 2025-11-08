@@ -29,12 +29,11 @@ export default function Home() {
 
   const enhanceMutation = useMutation({
     mutationFn: async (request: EnhancePromptRequest) => {
-      const response = await apiRequest<EnhancePromptResponse>("/api/enhance-prompt", {
+      return await apiRequest<EnhancePromptResponse>("/api/enhance-prompt", {
         method: "POST",
         body: JSON.stringify(request),
         headers: { "Content-Type": "application/json" },
       });
-      return response;
     },
     onError: (error) => {
       toast({
@@ -47,12 +46,11 @@ export default function Home() {
 
   const generateSuggestionsMutation = useMutation({
     mutationFn: async (request: GenerateSuggestionsRequest) => {
-      const response = await apiRequest<GenerateSuggestionsResponse>("/api/generate-suggestions", {
+      return await apiRequest<GenerateSuggestionsResponse>("/api/generate-suggestions", {
         method: "POST",
         body: JSON.stringify(request),
         headers: { "Content-Type": "application/json" },
       });
-      return response;
     },
     onSuccess: (data, variables) => {
       setCustomSuggestions(prev => ({
