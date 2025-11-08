@@ -3,10 +3,13 @@ import { useMutation } from "@tanstack/react-query";
 import Hero from "@/components/Hero";
 import PromptEditor from "@/components/PromptEditor";
 import ActionBar from "@/components/ActionBar";
-import CategoryTabs, { CATEGORIES, type CategoryId } from "@/components/CategoryTabs";
+import CategoryTabs, { CORE_CATEGORIES, type CategoryId } from "@/components/CategoryTabs";
 import EnhancementGrid from "@/components/EnhancementGrid";
 import StarterPrompts from "@/components/StarterPrompts";
-import { ENHANCEMENTS } from "@/lib/enhancements";
+import ModeToggle, { type Mode } from "@/components/ModeToggle";
+import PresetSelector from "@/components/PresetSelector";
+import AdvancedCategoryGroups from "@/components/AdvancedCategoryGroups";
+import { ENHANCEMENTS, type Preset } from "@/lib/enhancements";
 import type { Enhancement } from "@/components/EnhancementCard";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +28,8 @@ export default function Home() {
   const [appliedEnhancements, setAppliedEnhancements] = useState<Set<string>>(new Set());
   const [currentCategory, setCurrentCategory] = useState<CategoryId>("camera-angles");
   const [customSuggestions, setCustomSuggestions] = useState<Record<string, Enhancement[]>>({});
+  const [mode, setMode] = useState<Mode>("simple");
+  const [refreshingCategories, setRefreshingCategories] = useState<Set<CategoryId>>(new Set());
   const { toast } = useToast();
 
   const enhanceMutation = useMutation({
@@ -45,7 +50,8 @@ export default function Home() {
   });
 
   const generateSuggestionsMutation = useMutation({
-    mutationFn: async (request: GenerateSuggestionsRequest) => {
+    mutationFn: async (request: GenerateSuggestionsRequest & { category: CategoryId }) => {
+      setRefreshingCategories(prev => new Set(prev).add(request.category));
       return await apiRequest<GenerateSuggestionsResponse>("/api/generate-suggestions", {
         method: "POST",
         body: JSON.stringify(request),
@@ -57,12 +63,22 @@ export default function Home() {
         ...prev,
         [variables.category]: data.suggestions,
       }));
+      setRefreshingCategories(prev => {
+        const next = new Set(prev);
+        next.delete(variables.category);
+        return next;
+      });
       toast({
         title: "Suggestions refreshed",
         description: "New AI-generated suggestions are ready",
       });
     },
-    onError: (error) => {
+    onError: (error, variables) => {
+      setRefreshingCategories(prev => {
+        const next = new Set(prev);
+        next.delete(variables.category);
+        return next;
+      });
       toast({
         title: "Failed to generate suggestions",
         description: error instanceof Error ? error.message : "Could not generate new suggestions",
@@ -135,21 +151,66 @@ export default function Home() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = (category?: CategoryId) => {
+    const targetCategory = category || currentCategory;
+    const currentEnhancements = customSuggestions[targetCategory] || ENHANCEMENTS[targetCategory] || [];
+    
     // Clear applied enhancements for this category when refreshing
     const newApplied = new Set(appliedEnhancements);
     Array.from(newApplied).forEach(id => {
-      if (id.startsWith(`ai-${currentCategory}-`) || currentEnhancements.some(e => e.id === id)) {
+      if (id.startsWith(`ai-${targetCategory}-`) || currentEnhancements.some(e => e.id === id)) {
         newApplied.delete(id);
       }
     });
     setAppliedEnhancements(newApplied);
     
     generateSuggestionsMutation.mutate({
-      category: currentCategory,
+      category: targetCategory,
       count: 8,
       currentPrompt: currentPrompt,
     });
+  };
+
+  const handlePresetSelect = async (preset: Preset) => {
+    let updatedPrompt = currentPrompt;
+    const presetEnhancementIds: string[] = [];
+    
+    for (let i = 0; i < preset.enhancements.length; i++) {
+      const enhancement = preset.enhancements[i];
+      const enhancementId = `preset-${preset.id}-${i}`;
+      presetEnhancementIds.push(enhancementId);
+      
+      const request: EnhancePromptRequest = {
+        currentPrompt: updatedPrompt,
+        enhancement: {
+          title: enhancement.title,
+          description: enhancement.description,
+          category: enhancement.category,
+        },
+      };
+      
+      try {
+        const result = await enhanceMutation.mutateAsync(request);
+        updatedPrompt = result.enhancedPrompt;
+      } catch (error) {
+        console.error("Failed to apply preset enhancement:", error);
+        break;
+      }
+    }
+    
+    if (updatedPrompt !== currentPrompt) {
+      // Mark preset enhancements as applied
+      const newApplied = new Set(appliedEnhancements);
+      presetEnhancementIds.forEach(id => newApplied.add(id));
+      setAppliedEnhancements(newApplied);
+      
+      addToHistory(updatedPrompt);
+      setCurrentPrompt(updatedPrompt);
+      toast({
+        title: "Preset applied",
+        description: `${preset.name} style added to your prompt`,
+      });
+    }
   };
 
   const handleStarterPromptSelect = (prompt: string) => {
@@ -164,8 +225,13 @@ export default function Home() {
     }
   };
 
-  const currentCategoryLabel = CATEGORIES.find(c => c.id === currentCategory)?.label || "";
+  const currentCategoryLabel = CORE_CATEGORIES.find(c => c.id === currentCategory)?.label || "";
   const currentEnhancements = customSuggestions[currentCategory] || ENHANCEMENTS[currentCategory] || [];
+  
+  // Create refreshing state map for advanced mode
+  const refreshingState = Object.fromEntries(
+    Array.from(refreshingCategories).map(cat => [cat, true])
+  ) as Record<CategoryId, boolean>;
 
   return (
     <div className="min-h-screen bg-background">
@@ -220,19 +286,39 @@ export default function Home() {
           </div>
           
           <div className="lg:col-span-3 space-y-6">
-            <div className="space-y-4">
+            <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Enhancement Options</h2>
-              <CategoryTabs value={currentCategory} onChange={setCurrentCategory} />
+              <ModeToggle mode={mode} onChange={setMode} />
             </div>
-            
-            <EnhancementGrid
-              enhancements={currentEnhancements}
-              appliedIds={appliedEnhancements}
-              onEnhancementClick={handleEnhancementClick}
-              onRefresh={handleRefresh}
-              categoryLabel={currentCategoryLabel}
-              isRefreshing={generateSuggestionsMutation.isPending}
-            />
+
+            {mode === "simple" ? (
+              <>
+                <PresetSelector 
+                  onPresetSelect={handlePresetSelect}
+                  disabled={enhanceMutation.isPending}
+                />
+                
+                <div className="space-y-4">
+                  <CategoryTabs value={currentCategory} onChange={setCurrentCategory} />
+                  <EnhancementGrid
+                    enhancements={currentEnhancements}
+                    appliedIds={appliedEnhancements}
+                    onEnhancementClick={handleEnhancementClick}
+                    onRefresh={() => handleRefresh()}
+                    categoryLabel={currentCategoryLabel}
+                    isRefreshing={refreshingCategories.has(currentCategory)}
+                  />
+                </div>
+              </>
+            ) : (
+              <AdvancedCategoryGroups
+                enhancements={ENHANCEMENTS}
+                appliedIds={appliedEnhancements}
+                onEnhancementClick={handleEnhancementClick}
+                onRefresh={handleRefresh}
+                isRefreshing={refreshingState}
+              />
+            )}
           </div>
         </div>
       </div>
