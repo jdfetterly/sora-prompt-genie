@@ -9,6 +9,7 @@ import AutoGenerateButton from "@/components/AutoGenerateButton";
 import ModeToggle, { type Mode } from "@/components/ModeToggle";
 import PresetSelector from "@/components/PresetSelector";
 import AdvancedCategoryGroups from "@/components/AdvancedCategoryGroups";
+import Footer from "@/components/Footer";
 import { ENHANCEMENTS, type Preset } from "@/lib/enhancements";
 import type { Enhancement } from "@/components/EnhancementCard";
 import { Card } from "@/components/ui/card";
@@ -511,6 +512,7 @@ export default function Home() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
