@@ -159,10 +159,19 @@ Preferred communication style: Simple, everyday language.
 - **Response Time**: 2-15 seconds for AI operations with loading indicators
 - **Model**: Anthropic Claude 3.5 Sonnet via OpenRouter
 
+### Auto-Generate Feature
+- **Replaces Starter Prompts**: Users enter at least 3 words and click Auto-Generate
+- **Minimum Requirement**: 3-word minimum enforced on both client and server
+- **AI Expansion**: Basic prompts expanded into detailed cinematic descriptions
+- **Validation Feedback**: Tooltip shows when button disabled due to insufficient words
+- **Error Handling**: Returns 400 for validation errors, 500 for server failures
+- **History Integration**: Generated prompts added to undo/redo history
+
 ### Recent Changes (November 2025)
-- Implemented dual-mode system (simple/advanced)
-- Added 5 new enhancement categories (Weather, Time of Day, Composition, Mood, Texture)
-- Created preset system with 4 predefined combinations
-- Reorganized categories into 4 logical groups
-- Added per-category refresh state tracking
-- Improved contextual awareness for AI-generated suggestions
+- **November 8**: Replaced starter prompts with auto-generate feature (minimum 3 words required)
+- **November 8**: Implemented dual-mode system (simple/advanced)
+- **November 8**: Added 5 new enhancement categories (Weather, Time of Day, Composition, Mood, Texture)
+- **November 8**: Created preset system with 4 predefined combinations
+- **November 8**: Reorganized categories into 4 logical groups
+- **November 8**: Added per-category refresh state tracking
+- **November 8**: Improved contextual awareness for AI-generated suggestions
