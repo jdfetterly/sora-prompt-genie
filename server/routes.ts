@@ -1,11 +1,14 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { enhancePromptWithAI, generateSuggestions } from "./lib/openrouter";
+import { ZodError } from "zod";
+import { enhancePromptWithAI, generateSuggestions, autoGeneratePrompt } from "./lib/openrouter";
 import { 
   enhancePromptSchema, 
   generateSuggestionsSchema,
+  autoGeneratePromptSchema,
   type EnhancePromptResponse,
-  type GenerateSuggestionsResponse 
+  type GenerateSuggestionsResponse,
+  type AutoGeneratePromptResponse 
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -45,6 +48,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error generating suggestions:", error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to generate suggestions" 
+      });
+    }
+  });
+
+  app.post("/api/auto-generate-prompt", async (req, res) => {
+    try {
+      const request = autoGeneratePromptSchema.parse(req.body);
+      const generatedPrompt = await autoGeneratePrompt(request.basicPrompt);
+      
+      const response: AutoGeneratePromptResponse = {
+        generatedPrompt,
+      };
+      
+      res.json(response);
+    } catch (error) {
+      console.error("Error auto-generating prompt:", error);
+      
+      // Handle Zod validation errors with 400 status
+      if (error instanceof ZodError) {
+        res.status(400).json({ 
+          error: error.errors[0]?.message || "Validation failed" 
+        });
+        return;
+      }
+      
+      // All other errors return 500
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to auto-generate prompt" 
       });
     }
   });

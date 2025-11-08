@@ -1,11 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import Hero from "@/components/Hero";
 import PromptEditor from "@/components/PromptEditor";
 import ActionBar from "@/components/ActionBar";
 import CategoryTabs, { CORE_CATEGORIES, type CategoryId } from "@/components/CategoryTabs";
 import EnhancementGrid from "@/components/EnhancementGrid";
-import StarterPrompts from "@/components/StarterPrompts";
+import AutoGenerateButton from "@/components/AutoGenerateButton";
 import ModeToggle, { type Mode } from "@/components/ModeToggle";
 import PresetSelector from "@/components/PresetSelector";
 import AdvancedCategoryGroups from "@/components/AdvancedCategoryGroups";
@@ -14,7 +14,14 @@ import type { Enhancement } from "@/components/EnhancementCard";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { EnhancePromptRequest, EnhancePromptResponse, GenerateSuggestionsRequest, GenerateSuggestionsResponse } from "@shared/schema";
+import type { 
+  EnhancePromptRequest, 
+  EnhancePromptResponse, 
+  GenerateSuggestionsRequest, 
+  GenerateSuggestionsResponse,
+  AutoGeneratePromptRequest,
+  AutoGeneratePromptResponse 
+} from "@shared/schema";
 
 interface PromptHistoryEntry {
   prompt: string;
@@ -82,6 +89,31 @@ export default function Home() {
       toast({
         title: "Failed to generate suggestions",
         description: error instanceof Error ? error.message : "Could not generate new suggestions",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const autoGenerateMutation = useMutation({
+    mutationFn: async (request: AutoGeneratePromptRequest) => {
+      return await apiRequest<AutoGeneratePromptResponse>("/api/auto-generate-prompt", {
+        method: "POST",
+        body: JSON.stringify(request),
+        headers: { "Content-Type": "application/json" },
+      });
+    },
+    onSuccess: (data) => {
+      addToHistory(data.generatedPrompt);
+      setCurrentPrompt(data.generatedPrompt);
+      toast({
+        title: "Prompt generated",
+        description: "Your basic idea has been expanded into a cinematic prompt",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Generation failed",
+        description: error instanceof Error ? error.message : "Failed to auto-generate prompt",
         variant: "destructive",
       });
     },
@@ -213,9 +245,12 @@ export default function Home() {
     }
   };
 
-  const handleStarterPromptSelect = (prompt: string) => {
-    addToHistory(prompt);
-    setCurrentPrompt(prompt);
+  const handleAutoGenerate = () => {
+    if (!currentPrompt.trim()) return;
+    
+    autoGenerateMutation.mutate({
+      basicPrompt: currentPrompt.trim(),
+    });
   };
 
   const handlePromptChange = (value: string) => {
@@ -224,6 +259,10 @@ export default function Home() {
       addToHistory(value);
     }
   };
+
+  const wordCount = useMemo(() => {
+    return currentPrompt.trim().split(/\s+/).filter(word => word.length > 0).length;
+  }, [currentPrompt]);
 
   const currentCategoryLabel = CORE_CATEGORIES.find(c => c.id === currentCategory)?.label || "";
   const currentEnhancements = customSuggestions[currentCategory] || ENHANCEMENTS[currentCategory] || [];
@@ -243,13 +282,18 @@ export default function Home() {
             <Card className="p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Prompt Editor</h2>
-                <StarterPrompts onSelect={handleStarterPromptSelect} />
+                <AutoGenerateButton 
+                  onClick={handleAutoGenerate}
+                  disabled={enhanceMutation.isPending}
+                  isGenerating={autoGenerateMutation.isPending}
+                  wordCount={wordCount}
+                />
               </div>
               
               <PromptEditor
                 value={currentPrompt}
                 onChange={handlePromptChange}
-                placeholder="Describe your video scene... (e.g., 'A serene beach at sunset with gentle waves')"
+                placeholder="Enter at least 3 words, then click Auto-Generate to create a detailed prompt..."
               />
               
               <ActionBar

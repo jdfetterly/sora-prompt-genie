@@ -87,6 +87,32 @@ Return ONLY the prompt text, nothing else.`;
   return await callOpenRouter(messages);
 }
 
+export async function autoGeneratePrompt(basicPrompt: string): Promise<string> {
+  const systemPrompt = `You are an expert video prompt engineer specializing in Sora AI video generation. Your task is to expand basic video ideas into detailed, cinematic prompts that include:
+
+1. Rich visual descriptions
+2. Camera angles and movement
+3. Lighting and atmosphere
+4. Color palette suggestions
+5. Mood and emotion
+6. Specific details that bring the scene to life
+
+Keep prompts concise yet evocative (2-4 sentences). Use professional cinematography language while maintaining readability.`;
+
+  const userPrompt = `Expand this basic video idea into a detailed, cinematic Sora prompt:
+
+"${basicPrompt}"
+
+Return ONLY the enhanced prompt text, nothing else.`;
+
+  const messages: OpenRouterMessage[] = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: userPrompt },
+  ];
+
+  return await callOpenRouter(messages);
+}
+
 export async function generateSuggestions(category: string, count: number, currentPrompt?: string): Promise<Suggestion[]> {
   const systemPrompt = `You are a creative cinematography consultant specializing in Sora AI video generation. Generate diverse, professional enhancement suggestions for video prompts.
 
