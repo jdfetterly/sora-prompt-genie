@@ -4,6 +4,7 @@ import type { Enhancement } from '../EnhancementCard';
 
 export default function EnhancementGridExample() {
   const [applied, setApplied] = useState<Set<string>>(new Set());
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const enhancements: Enhancement[] = [
     { id: '1', title: 'Wide Shot', description: 'Captures full scene', category: 'camera' },
@@ -21,14 +22,21 @@ export default function EnhancementGridExample() {
     setApplied(newApplied);
   };
   
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => setIsRefreshing(false), 2000);
+    console.log('Refresh');
+  };
+  
   return (
     <div className="p-8">
       <EnhancementGrid
         enhancements={enhancements}
         appliedIds={applied}
         onEnhancementClick={handleClick}
-        onRefresh={() => console.log('Refresh')}
+        onRefresh={handleRefresh}
         categoryLabel="Camera Angles"
+        isRefreshing={isRefreshing}
       />
     </div>
   );

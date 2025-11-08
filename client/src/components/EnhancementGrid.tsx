@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Loader2 } from "lucide-react";
 import EnhancementCard, { type Enhancement } from "./EnhancementCard";
 import { Badge } from "@/components/ui/badge";
 
@@ -9,6 +9,7 @@ interface EnhancementGridProps {
   onEnhancementClick: (enhancement: Enhancement) => void;
   onRefresh: () => void;
   categoryLabel: string;
+  isRefreshing?: boolean;
 }
 
 export default function EnhancementGrid({
@@ -17,6 +18,7 @@ export default function EnhancementGrid({
   onEnhancementClick,
   onRefresh,
   categoryLabel,
+  isRefreshing = false,
 }: EnhancementGridProps) {
   const appliedCount = enhancements.filter(e => appliedIds.has(e.id)).length;
   
@@ -35,11 +37,21 @@ export default function EnhancementGrid({
           variant="outline"
           size="sm"
           onClick={onRefresh}
+          disabled={isRefreshing}
           className="gap-2"
           data-testid="button-refresh-suggestions"
         >
-          <RefreshCw className="w-4 h-4" />
-          Refresh
+          {isRefreshing ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </>
+          )}
         </Button>
       </div>
       

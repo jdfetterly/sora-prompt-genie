@@ -136,6 +136,15 @@ export default function Home() {
   };
 
   const handleRefresh = () => {
+    // Clear applied enhancements for this category when refreshing
+    const newApplied = new Set(appliedEnhancements);
+    Array.from(newApplied).forEach(id => {
+      if (id.startsWith(`ai-${currentCategory}-`) || currentEnhancements.some(e => e.id === id)) {
+        newApplied.delete(id);
+      }
+    });
+    setAppliedEnhancements(newApplied);
+    
     generateSuggestionsMutation.mutate({
       category: currentCategory,
       count: 8,
@@ -221,6 +230,7 @@ export default function Home() {
               onEnhancementClick={handleEnhancementClick}
               onRefresh={handleRefresh}
               categoryLabel={currentCategoryLabel}
+              isRefreshing={generateSuggestionsMutation.isPending}
             />
           </div>
         </div>
