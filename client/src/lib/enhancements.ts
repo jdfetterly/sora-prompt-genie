@@ -1,6 +1,65 @@
 import type { Enhancement } from "@/components/EnhancementCard";
 import type { CategoryId } from "@/components/CategoryTabs";
 
+// Preset definitions for simple mode
+export interface Preset {
+  id: string;
+  name: string;
+  description: string;
+  enhancements: Array<{
+    title: string;
+    description: string;
+    category: CategoryId;
+  }>;
+}
+
+export const PRESETS: Preset[] = [
+  {
+    id: "cinematic-drama",
+    name: "Cinematic Drama",
+    description: "Professional dramatic look with depth and atmosphere",
+    enhancements: [
+      { title: "Low Angle Shot", description: "Camera below subject emphasizing power and drama", category: "camera-angles" },
+      { title: "Hard Side Light", description: "Strong directional lighting with dramatic shadows", category: "lighting" },
+      { title: "Cinematic Anamorphic", description: "Widescreen with characteristic lens flares", category: "style" },
+      { title: "Shallow Focus", description: "Subject sharp, background beautifully blurred", category: "depth-of-field" },
+    ]
+  },
+  {
+    id: "dreamy-atmosphere",
+    name: "Dreamy Atmosphere",
+    description: "Soft, ethereal mood with gentle motion",
+    enhancements: [
+      { title: "Soft Diffused Light", description: "Even, wraparound lighting with minimal shadows", category: "lighting" },
+      { title: "Golden Hour Glow", description: "Warm sunrise or sunset natural light", category: "time-of-day" },
+      { title: "Slow Dolly Movement", description: "Gentle forward camera motion", category: "camera-motion" },
+      { title: "Pastel Color Palette", description: "Soft pinks, lavenders, mint greens", category: "color-palette" },
+    ]
+  },
+  {
+    id: "action-energy",
+    name: "Action & Energy",
+    description: "Dynamic movement with bold visual impact",
+    enhancements: [
+      { title: "Handheld Camera", description: "Natural shake for documentary energy", category: "camera-motion" },
+      { title: "High Contrast", description: "Bold shadows and highlights", category: "lighting" },
+      { title: "Quick Timing", description: "Fast-paced action under 2 seconds", category: "motion-timing" },
+      { title: "Wide Establishing Shot", description: "Full scene context with action", category: "camera-angles" },
+    ]
+  },
+  {
+    id: "documentary-realism",
+    name: "Documentary Realism",
+    description: "Authentic, natural look with minimal stylization",
+    enhancements: [
+      { title: "Natural Lighting", description: "Soft ambient light without artificial sources", category: "lighting" },
+      { title: "Medium Shot Framing", description: "Balanced subject and environment", category: "camera-angles" },
+      { title: "16mm Documentary Style", description: "Raw, authentic with natural grain", category: "style" },
+      { title: "Deep Focus", description: "Everything sharp from foreground to background", category: "depth-of-field" },
+    ]
+  },
+];
+
 export const ENHANCEMENTS: Record<CategoryId, Enhancement[]> = {
   "camera-angles": [
     { id: "ca-1", title: "Wide Establishing Shot", description: "Eye-level wide angle capturing the full scene context", category: "camera-angles" },
@@ -67,5 +126,45 @@ export const ENHANCEMENTS: Record<CategoryId, Enhancement[]> = {
     { id: "cp-6", title: "Neon Synthwave", description: "Electric purples, hot pinks, cyan creating retro-future vibe", category: "color-palette" },
     { id: "cp-7", title: "Desaturated Bleach", description: "Washed-out colors with blown highlights", category: "color-palette" },
     { id: "cp-8", title: "Rich Jewel Tones", description: "Deep emerald, sapphire, ruby, gold for opulence", category: "color-palette" },
+  ],
+  "weather": [
+    { id: "w-1", title: "Morning Mist", description: "Soft fog rolling through scene adding mystery", category: "weather" },
+    { id: "w-2", title: "Gentle Rain", description: "Light rainfall creating texture and reflections", category: "weather" },
+    { id: "w-3", title: "Falling Snow", description: "Snowflakes drifting creating serene atmosphere", category: "weather" },
+    { id: "w-4", title: "Dust Particles", description: "Floating particles caught in light beams", category: "weather" },
+    { id: "w-5", title: "Heavy Storm", description: "Dramatic clouds and turbulent atmosphere", category: "weather" },
+    { id: "w-6", title: "Clear Crisp Air", description: "High visibility with sharp atmospheric clarity", category: "weather" },
+  ],
+  "time-of-day": [
+    { id: "tod-1", title: "Golden Hour", description: "Warm sunset/sunrise light with long shadows", category: "time-of-day" },
+    { id: "tod-2", title: "Blue Hour", description: "Deep twilight blues before sunrise or after sunset", category: "time-of-day" },
+    { id: "tod-3", title: "Harsh Midday", description: "Direct overhead sun with strong contrast", category: "time-of-day" },
+    { id: "tod-4", title: "Twilight Dusk", description: "Fading light with rich gradient skies", category: "time-of-day" },
+    { id: "tod-5", title: "Deep Night", description: "Dark atmosphere lit by moon or artificial sources", category: "time-of-day" },
+    { id: "tod-6", title: "Early Dawn", description: "First light breaking with cool morning tones", category: "time-of-day" },
+  ],
+  "composition": [
+    { id: "comp-1", title: "Rule of Thirds", description: "Subject positioned on intersecting grid lines", category: "composition" },
+    { id: "comp-2", title: "Symmetrical Balance", description: "Perfect mirror balance creating harmony", category: "composition" },
+    { id: "comp-3", title: "Leading Lines", description: "Natural lines guiding eye to subject", category: "composition" },
+    { id: "comp-4", title: "Negative Space", description: "Empty areas emphasizing subject isolation", category: "composition" },
+    { id: "comp-5", title: "Framing Device", description: "Natural frame within frame (doorway, window)", category: "composition" },
+    { id: "comp-6", title: "Diagonal Dynamics", description: "Angled elements creating visual energy", category: "composition" },
+  ],
+  "mood": [
+    { id: "mood-1", title: "Serene & Peaceful", description: "Calm, tranquil emotional atmosphere", category: "mood" },
+    { id: "mood-2", title: "Tense & Suspenseful", description: "Anxious anticipation and unease", category: "mood" },
+    { id: "mood-3", title: "Mysterious & Enigmatic", description: "Unknown elements creating curiosity", category: "mood" },
+    { id: "mood-4", title: "Nostalgic & Wistful", description: "Bittersweet remembrance and longing", category: "mood" },
+    { id: "mood-5", title: "Uplifting & Joyful", description: "Optimistic and energizing emotion", category: "mood" },
+    { id: "mood-6", title: "Melancholic & Somber", description: "Reflective sadness and contemplation", category: "mood" },
+  ],
+  "texture": [
+    { id: "tex-1", title: "Film Grain", description: "35mm organic grain texture throughout", category: "texture" },
+    { id: "tex-2", title: "Smooth Surfaces", description: "Polished, clean textures with minimal detail", category: "texture" },
+    { id: "tex-3", title: "Rough Weathered", description: "Aged, worn surfaces with character", category: "texture" },
+    { id: "tex-4", title: "Glossy Reflective", description: "Shiny surfaces with mirror-like quality", category: "texture" },
+    { id: "tex-5", title: "Matte Finish", description: "Non-reflective surfaces absorbing light", category: "texture" },
+    { id: "tex-6", title: "Organic Natural", description: "Tactile natural materials like wood, stone", category: "texture" },
   ],
 };
