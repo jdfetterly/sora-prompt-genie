@@ -2,6 +2,13 @@ import { type EnhancePromptRequest, type Suggestion } from "@shared/schema";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+// Model configuration - use cheaper models to reduce costs
+// Options: 
+//   - anthropic/claude-3-haiku (cheapest Claude, ~$0.25/$1M input tokens)
+//   - google/gemini-flash-1.5 (very cheap, ~$0.075/$1M input tokens)
+//   - openai/gpt-3.5-turbo (cheap, ~$0.5/$1M input tokens)
+//   - anthropic/claude-3.5-sonnet (expensive, ~$3/$1M input tokens - current default)
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-3-haiku";
 
 interface OpenRouterMessage {
   role: "system" | "user" | "assistant";
@@ -36,7 +43,7 @@ async function callOpenRouter(messages: OpenRouterMessage[]): Promise<string> {
       "HTTP-Referer": process.env.SITE_URL || "http://localhost:5000",
     },
     body: JSON.stringify({
-      model: "anthropic/claude-3.5-sonnet",
+      model: OPENROUTER_MODEL,
       messages,
       temperature: 0.7,
     } as OpenRouterRequest),
