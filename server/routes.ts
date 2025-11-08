@@ -30,7 +30,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/generate-suggestions", async (req, res) => {
     try {
       const request = generateSuggestionsSchema.parse(req.body);
-      const suggestions = await generateSuggestions(request.category, request.count);
+      const suggestions = await generateSuggestions(
+        request.category, 
+        request.count,
+        request.currentPrompt
+      );
       
       const response: GenerateSuggestionsResponse = {
         suggestions,

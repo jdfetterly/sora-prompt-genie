@@ -87,20 +87,21 @@ Return ONLY the prompt text, nothing else.`;
   return await callOpenRouter(messages);
 }
 
-export async function generateSuggestions(category: string, count: number): Promise<Suggestion[]> {
+export async function generateSuggestions(category: string, count: number, currentPrompt?: string): Promise<Suggestion[]> {
   const systemPrompt = `You are a creative cinematography consultant specializing in Sora AI video generation. Generate diverse, professional enhancement suggestions for video prompts.
 
 Each suggestion should be:
+- Contextually relevant to the user's current creative direction
 - Specific and actionable
 - Varied in style and approach
 - Professionally described
-- Suitable for different creative contexts
+- Complementary to what's already described in the prompt
 
 Return suggestions as a JSON array with this structure:
 [
   {
-    "title": "Brief, catchy title",
-    "description": "Clear, specific description of the cinematic element"
+    "title": "Brief, catchy title (3-5 words)",
+    "description": "Clear, specific description of the cinematic element (one concise sentence)"
   }
 ]`;
 
@@ -116,7 +117,15 @@ Return suggestions as a JSON array with this structure:
 
   const categoryDesc = categoryDescriptions[category] || "cinematic enhancements";
 
-  const userPrompt = `Generate ${count} creative and diverse suggestions for ${categoryDesc}. Make each one unique and professionally described. Return as a JSON array only.`;
+  let userPrompt: string;
+  
+  if (currentPrompt && currentPrompt.trim()) {
+    userPrompt = `Current video prompt: "${currentPrompt}"
+
+Generate ${count} creative and contextually relevant suggestions for ${categoryDesc} that would enhance this specific scene. Consider what's already described and suggest complementary options that would elevate the visual storytelling. Make each suggestion unique and professionally described. Return as a JSON array only.`;
+  } else {
+    userPrompt = `Generate ${count} creative and diverse suggestions for ${categoryDesc}. Make each one unique and professionally described, covering a wide range of creative approaches. Return as a JSON array only.`;
+  }
 
   const messages: OpenRouterMessage[] = [
     { role: "system", content: systemPrompt },

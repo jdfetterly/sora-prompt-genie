@@ -148,6 +148,7 @@ export default function Home() {
     generateSuggestionsMutation.mutate({
       category: currentCategory,
       count: 8,
+      currentPrompt: currentPrompt,
     });
   };
 

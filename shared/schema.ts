@@ -20,6 +20,7 @@ export type EnhancePromptResponse = z.infer<typeof enhancePromptResponseSchema>;
 export const generateSuggestionsSchema = z.object({
   category: z.string(),
   count: z.number().min(1).max(20).default(8),
+  currentPrompt: z.string().optional(),
 });
 
 export type GenerateSuggestionsRequest = z.infer<typeof generateSuggestionsSchema>;
