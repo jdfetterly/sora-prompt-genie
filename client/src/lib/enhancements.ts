@@ -58,6 +58,28 @@ export const PRESETS: Preset[] = [
       { title: "Deep Focus", description: "Everything sharp from foreground to background", category: "depth-of-field" },
     ]
   },
+  {
+    id: "sci-fi-futuristic",
+    name: "Sci-Fi Futuristic",
+    description: "High-tech atmosphere with neon and cyberpunk aesthetics",
+    enhancements: [
+      { title: "Neon Glow", description: "Colorful artificial lighting with electric atmosphere", category: "lighting" },
+      { title: "Blade Runner Cyberpunk", description: "Neon-soaked, rain-slicked dystopian atmosphere", category: "style" },
+      { title: "Dutch Angle", description: "Tilted camera creating dynamic tension and unease", category: "camera-angles" },
+      { title: "Neon Synthwave", description: "Electric purples, hot pinks, cyan creating retro-future vibe", category: "color-palette" },
+    ]
+  },
+  {
+    id: "nature-wildlife",
+    name: "Nature & Wildlife",
+    description: "Natural beauty with organic textures and lighting",
+    enhancements: [
+      { title: "Golden Hour", description: "Warm, soft natural light during sunrise or sunset", category: "lighting" },
+      { title: "Wide Establishing Shot", description: "Eye-level wide angle capturing the full scene context", category: "camera-angles" },
+      { title: "Slow Dolly In", description: "Smooth forward camera movement creating intimacy", category: "camera-motion" },
+      { title: "Organic Natural", description: "Tactile natural materials like wood, stone", category: "texture" },
+    ]
+  },
 ];
 
 export const ENHANCEMENTS: Record<CategoryId, Enhancement[]> = {

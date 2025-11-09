@@ -39,12 +39,12 @@ export default function AutoGenerateButton({
               disabled={true}
             >
               <Sparkles className="w-4 h-4" />
-              {isGenerating ? "Generating..." : "Auto-Generate"}
+              {isGenerating ? "Enhancing..." : "Enhance Prompt"}
             </Button>
           </div>
         </TooltipTrigger>
         <TooltipContent>
-          <p>Enter at least 3 words to auto-generate a prompt</p>
+          <p>Enter at least 3 words to enhance a prompt</p>
         </TooltipContent>
       </Tooltip>
     );

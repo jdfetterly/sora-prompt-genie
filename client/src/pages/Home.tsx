@@ -9,6 +9,7 @@ import AutoGenerateButton from "@/components/AutoGenerateButton";
 import { type Mode } from "@/components/ModeToggle";
 import PresetSelector from "@/components/PresetSelector";
 import AdvancedCategoryGroups from "@/components/AdvancedCategoryGroups";
+import AppliedFilters from "@/components/AppliedFilters";
 import Footer from "@/components/Footer";
 import { ENHANCEMENTS, type Preset } from "@/lib/enhancements";
 import type { Enhancement } from "@/components/EnhancementCard";
@@ -419,11 +420,6 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <div className="lg:col-span-2 space-y-4">
-            <PresetSelector 
-              onPresetSelect={handlePresetSelect}
-              disabled={enhanceMutation.isPending}
-            />
-            
             <Card className="p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Prompt Editor</h2>
@@ -438,7 +434,7 @@ export default function Home() {
               <PromptEditor
                 value={currentPrompt}
                 onChange={handlePromptChange}
-                placeholder="Enter at least 3 words, then click Auto-Generate to create a detailed prompt..."
+                placeholder="Enter at least 3 words, then click Enhance Prompt to create a detailed prompt..."
               />
               
               <ActionBar
@@ -449,6 +445,11 @@ export default function Home() {
                 canRedo={historyIndex < history.length - 1}
               />
             </Card>
+            
+            <PresetSelector 
+              onPresetSelect={handlePresetSelect}
+              disabled={enhanceMutation.isPending}
+            />
             
             {history.length > 0 && (
               <Card className="p-4">
@@ -482,6 +483,13 @@ export default function Home() {
           
           <div className="lg:col-span-3 space-y-6">
             <h2 className="text-lg font-semibold">Enhancement Options</h2>
+            
+            <AppliedFilters
+              appliedIds={appliedEnhancements}
+              enhancements={ENHANCEMENTS}
+              customSuggestions={customSuggestions}
+              onRemove={handleEnhancementClick}
+            />
 
             {mode === "simple" ? (
               <>
@@ -500,6 +508,7 @@ export default function Home() {
             ) : (
               <AdvancedCategoryGroups
                 enhancements={ENHANCEMENTS}
+                customSuggestions={customSuggestions}
                 appliedIds={appliedEnhancements}
                 onEnhancementClick={handleEnhancementClick}
                 onRefresh={handleRefresh}
