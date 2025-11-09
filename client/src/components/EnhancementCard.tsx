@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 export interface Enhancement {
   id: string;
@@ -35,9 +36,18 @@ export default function EnhancementCard({ enhancement, isApplied, onClick }: Enh
       
       <div className="space-y-1 pr-6">
         <h3 className="font-medium text-sm">{enhancement.title}</h3>
-        <p className="text-xs text-muted-foreground line-clamp-2">
-          {enhancement.description}
-        </p>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="block w-full">
+              <p className="text-xs text-muted-foreground line-clamp-2">
+                {enhancement.description}
+              </p>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-xs z-50">
+            <p>{enhancement.description}</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </Card>
   );

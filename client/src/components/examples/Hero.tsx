@@ -1,5 +1,7 @@
-import Hero from '../Hero';
+import { useState } from 'react';
+import Header from '../Header';
 
 export default function HeroExample() {
-  return <Hero />;
+  const [mode, setMode] = useState<'simple' | 'advanced'>('simple');
+  return <Header mode={mode} onModeChange={setMode} />;
 }
