@@ -14,6 +14,7 @@ import Footer from "@/components/Footer";
 import { ENHANCEMENTS, type Preset } from "@/lib/enhancements";
 import type { Enhancement } from "@/components/EnhancementCard";
 import { Card } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { 
@@ -22,7 +23,9 @@ import type {
   GenerateSuggestionsRequest, 
   GenerateSuggestionsResponse,
   AutoGeneratePromptRequest,
-  AutoGeneratePromptResponse 
+  AutoGeneratePromptResponse,
+  StructurePromptRequest,
+  StructurePromptResponse 
 } from "@shared/schema";
 
 interface PromptHistoryEntry {
@@ -41,6 +44,8 @@ export default function Home() {
   const [refreshingCategories, setRefreshingCategories] = useState<Set<CategoryId>>(new Set());
   // Track the prompt state before each category's enhancement was applied
   const [promptBeforeCategory, setPromptBeforeCategory] = useState<Record<CategoryId, string>>({});
+  // Track which enhancement is currently being processed
+  const [processingEnhancementId, setProcessingEnhancementId] = useState<string | null>(null);
   const { toast } = useToast();
   
   // Refs for debounced history tracking
@@ -55,7 +60,11 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
       });
     },
+    onSuccess: () => {
+      setProcessingEnhancementId(null);
+    },
     onError: (error) => {
+      setProcessingEnhancementId(null);
       toast({
         title: "Enhancement failed",
         description: error instanceof Error ? error.message : "Failed to enhance prompt with AI",
@@ -83,10 +92,8 @@ export default function Home() {
         next.delete(variables.category);
         return next;
       });
-      toast({
-        title: "Suggestions refreshed",
-        description: "New AI-generated suggestions are ready",
-      });
+      // Note: Refresh operations intentionally do not show success toasts.
+      // Only error toasts are displayed. The visual feedback (refresh button state and new suggestions) is sufficient.
     },
     onError: (error, variables) => {
       setRefreshingCategories(prev => {
@@ -121,6 +128,30 @@ export default function Home() {
       toast({
         title: "Generation failed",
         description: error instanceof Error ? error.message : "Failed to auto-generate prompt",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const structureMutation = useMutation({
+    mutationFn: async (request: StructurePromptRequest) => {
+      return await apiRequest<StructurePromptResponse>("/api/structure-prompt", {
+        method: "POST",
+        body: JSON.stringify(request),
+        headers: { "Content-Type": "application/json" },
+      });
+    },
+    onSuccess: (data) => {
+      isAIUpdate.current = true;
+      addToHistory(data.structuredPrompt);
+      setCurrentPrompt(data.structuredPrompt);
+      // Note: Structure operations intentionally do not show success toasts.
+      // Only error toasts are displayed. The prompt update provides sufficient feedback.
+    },
+    onError: (error) => {
+      toast({
+        title: "Structuring failed",
+        description: error instanceof Error ? error.message : "Failed to structure prompt",
         variant: "destructive",
       });
     },
@@ -203,6 +234,7 @@ export default function Home() {
       },
     };
     
+    setProcessingEnhancementId(enhancement.id);
     const result = await enhanceMutation.mutateAsync(request);
     isAIUpdate.current = true;
     addToHistory(result.enhancedPrompt);
@@ -258,6 +290,21 @@ export default function Home() {
     } catch (err) {
       console.error('Failed to copy:', err);
     }
+  };
+
+  const handleStructure = () => {
+    if (!currentPrompt.trim()) {
+      toast({
+        title: "Empty prompt",
+        description: "Please enter a prompt before structuring it",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    structureMutation.mutate({
+      currentPrompt: currentPrompt.trim(),
+    });
   };
 
   const handleRefresh = (category?: CategoryId) => {
@@ -435,14 +482,17 @@ export default function Home() {
                 value={currentPrompt}
                 onChange={handlePromptChange}
                 placeholder="Enter at least 3 words, then click Enhance Prompt to create a detailed prompt..."
+                isEnhancing={enhanceMutation.isPending || structureMutation.isPending || autoGenerateMutation.isPending}
               />
               
               <ActionBar
                 onUndo={handleUndo}
                 onRedo={handleRedo}
                 onCopy={handleCopy}
+                onStructure={handleStructure}
                 canUndo={historyIndex >= 0}
                 canRedo={historyIndex < history.length - 1}
+                isStructuring={structureMutation.isPending}
               />
             </Card>
             
@@ -452,31 +502,39 @@ export default function Home() {
             />
             
             {history.length > 0 && (
-              <Card className="p-4">
-                <h3 className="text-sm font-medium mb-3">History</h3>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {history.map((entry, index) => (
-                    <button
-                      key={entry.timestamp}
-                      onClick={() => {
-                        // Clear any pending debounced save
-                        if (pendingHistorySave.current) {
-                          clearTimeout(pendingHistorySave.current);
-                          pendingHistorySave.current = null;
-                        }
-                        setHistoryIndex(index);
-                        isAIUpdate.current = true;
-                        setCurrentPrompt(entry.prompt);
-                      }}
-                      className={`w-full text-left p-2 rounded text-xs hover-elevate transition-colors ${
-                        index === historyIndex ? 'bg-primary/10' : ''
-                      }`}
-                      data-testid={`history-item-${index}`}
-                    >
-                      <div className="line-clamp-2 font-mono">{entry.prompt}</div>
-                    </button>
-                  ))}
-                </div>
+              <Card className="p-0">
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="history" className="border-none">
+                    <AccordionTrigger className="px-4 py-3 text-sm font-medium hover:no-underline">
+                      History
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {history.map((entry, index) => (
+                          <button
+                            key={entry.timestamp}
+                            onClick={() => {
+                              // Clear any pending debounced save
+                              if (pendingHistorySave.current) {
+                                clearTimeout(pendingHistorySave.current);
+                                pendingHistorySave.current = null;
+                              }
+                              setHistoryIndex(index);
+                              isAIUpdate.current = true;
+                              setCurrentPrompt(entry.prompt);
+                            }}
+                            className={`w-full text-left p-2 rounded text-xs hover-elevate transition-colors ${
+                              index === historyIndex ? 'bg-primary/10' : ''
+                            }`}
+                            data-testid={`history-item-${index}`}
+                          >
+                            <div className="line-clamp-2 font-mono">{entry.prompt}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </Card>
             )}
           </div>
@@ -502,6 +560,7 @@ export default function Home() {
                     onRefresh={() => handleRefresh()}
                     categoryLabel={currentCategoryLabel}
                     isRefreshing={refreshingCategories.has(currentCategory)}
+                    processingEnhancementId={processingEnhancementId}
                   />
                 </div>
               </>
@@ -513,6 +572,7 @@ export default function Home() {
                 onEnhancementClick={handleEnhancementClick}
                 onRefresh={handleRefresh}
                 isRefreshing={refreshingState}
+                processingEnhancementId={processingEnhancementId}
               />
             )}
           </div>

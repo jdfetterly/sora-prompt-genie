@@ -60,7 +60,7 @@ export default function AutoGenerateButton({
       disabled={isDisabled}
     >
       <Sparkles className="w-4 h-4" />
-      {isGenerating ? "Generating..." : "Auto-Generate"}
+      {isGenerating ? "Enhancing..." : "Enhance Prompt"}
     </Button>
   );
 }

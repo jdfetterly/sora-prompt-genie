@@ -13,6 +13,7 @@ interface AdvancedCategoryGroupsProps {
   onEnhancementClick: (enhancement: Enhancement) => void;
   onRefresh: (category: CategoryId) => void;
   isRefreshing: Record<CategoryId, boolean>;
+  processingEnhancementId?: string | null;
 }
 
 export default function AdvancedCategoryGroups({
@@ -22,6 +23,7 @@ export default function AdvancedCategoryGroups({
   onEnhancementClick,
   onRefresh,
   isRefreshing,
+  processingEnhancementId = null,
 }: AdvancedCategoryGroupsProps) {
   // Track selected top-level category (only one can be selected at a time)
   const [selectedTopLevel, setSelectedTopLevel] = useState<CategoryGroupId>("camera");
@@ -142,6 +144,7 @@ export default function AdvancedCategoryGroups({
             onRefresh={() => onRefresh(selectedSubcategory)}
             categoryLabel={selectedGroup?.categories.find(c => c.id === selectedSubcategory)?.label || ""}
             isRefreshing={isRefreshing[selectedSubcategory] || false}
+            processingEnhancementId={processingEnhancementId}
           />
         </div>
       )}

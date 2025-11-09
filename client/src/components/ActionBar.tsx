@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Undo2, Redo2, Copy, Check } from "lucide-react";
+import { Undo2, Redo2, Copy, Check, Layout } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -7,11 +7,13 @@ interface ActionBarProps {
   onUndo: () => void;
   onRedo: () => void;
   onCopy: () => void;
+  onStructure: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  isStructuring?: boolean;
 }
 
-export default function ActionBar({ onUndo, onRedo, onCopy, canUndo, canRedo }: ActionBarProps) {
+export default function ActionBar({ onUndo, onRedo, onCopy, onStructure, canUndo, canRedo, isStructuring = false }: ActionBarProps) {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
   
@@ -52,6 +54,17 @@ export default function ActionBar({ onUndo, onRedo, onCopy, canUndo, canRedo }: 
       </div>
       
       <div className="h-6 w-px bg-border" />
+      
+      <Button
+        onClick={onStructure}
+        disabled={isStructuring}
+        data-testid="button-structure"
+        className="gap-2"
+        variant="outline"
+      >
+        <Layout className="w-4 h-4" />
+        {isStructuring ? "Structuring..." : "Structure Prompt"}
+      </Button>
       
       <Button
         onClick={handleCopy}

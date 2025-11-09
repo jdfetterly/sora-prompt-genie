@@ -1,4 +1,4 @@
-import { type EnhancePromptRequest, type Suggestion } from "@shared/schema";
+import { type EnhancePromptRequest, type Suggestion, type StructurePromptRequest } from "@shared/schema";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -34,6 +34,10 @@ async function callOpenRouter(messages: OpenRouterMessage[]): Promise<string> {
   if (!OPENROUTER_API_KEY) {
     throw new Error("OPENROUTER_API_KEY environment variable is not set");
   }
+  
+  // Debug logging (key prefix only, not full key)
+  const keyPrefix = OPENROUTER_API_KEY.substring(0, Math.min(10, OPENROUTER_API_KEY.length));
+  console.log(`[OpenRouter] Making API call with key prefix: ${keyPrefix}... (length: ${OPENROUTER_API_KEY.length})`);
 
   let response: Response;
   try {
@@ -61,16 +65,41 @@ async function callOpenRouter(messages: OpenRouterMessage[]): Promise<string> {
 
   if (!response.ok) {
     let errorText = "";
+    let errorData: any = null;
     try {
       errorText = await response.text();
+      // Try to parse as JSON to extract error details
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        // Not JSON, use text as-is
+      }
     } catch {
       errorText = response.statusText;
     }
-    const errorMessage = `OpenRouter API error: ${response.status} ${errorText}`;
+    
+    // Provide user-friendly error messages for common issues
+    let errorMessage = `OpenRouter API error: ${response.status}`;
+    
+    if (response.status === 401) {
+      if (errorData?.error?.message) {
+        errorMessage = `Authentication failed: ${errorData.error.message}. Please check your OPENROUTER_API_KEY environment variable.`;
+      } else {
+        errorMessage = "Authentication failed: Invalid or missing OpenRouter API key. Please check your OPENROUTER_API_KEY environment variable.";
+      }
+    } else if (response.status === 429) {
+      errorMessage = "Rate limit exceeded. Please try again in a moment.";
+    } else if (errorData?.error?.message) {
+      errorMessage = `OpenRouter API error: ${errorData.error.message}`;
+    } else if (errorText) {
+      errorMessage = `OpenRouter API error: ${response.status} ${errorText}`;
+    }
+    
     console.error("OpenRouter API Error Details:", {
       status: response.status,
       statusText: response.statusText,
       body: errorText,
+      parsedError: errorData,
       url: OPENROUTER_API_URL,
       model: OPENROUTER_MODEL,
     });
@@ -161,6 +190,42 @@ Return ONLY the enhanced prompt text, nothing else.`;
   ];
 
   return await callOpenRouter(messages);
+}
+
+export async function structurePromptWithAI(request: StructurePromptRequest): Promise<string> {
+  const systemPrompt = `You are an expert video prompt engineer specializing in Sora AI video generation. Your task is to restructure video prompts according to the Sora prompt guide template format.
+
+The structured format should include:
+1. A prose scene description in plain language (describe characters, costumes, scenery, weather, and other details)
+2. A Cinematography section with:
+   - Camera shot: [framing and angle, e.g. wide establishing shot, eye level]
+   - Mood: [overall tone, e.g. cinematic and tense, playful and suspenseful, luxurious anticipation]
+3. An Actions section with bulleted list of specific beats or gestures
+4. A Dialogue section (only if the shot has dialogue)
+
+Preserve ALL content from the original prompt. Organize it intelligently into these sections. If the prompt already follows this structure, maintain it but ensure it's properly formatted. If certain sections don't apply (e.g., no dialogue), omit them.`;
+
+  const userPrompt = request.currentPrompt
+    ? `Restructure this video prompt according to the Sora prompt guide template format:
+
+"${request.currentPrompt}"
+
+Return ONLY the structured prompt text, nothing else.`
+    : `The prompt is empty. Return an empty string.`;
+
+  const messages: OpenRouterMessage[] = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: userPrompt },
+  ];
+
+  const result = await callOpenRouter(messages);
+  
+  // Return empty string if prompt was empty
+  if (!request.currentPrompt.trim()) {
+    return "";
+  }
+  
+  return result;
 }
 
 export async function generateSuggestions(category: string, count: number, currentPrompt?: string): Promise<Suggestion[]> {

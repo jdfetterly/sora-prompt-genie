@@ -2,17 +2,29 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { ZodError } from "zod";
 import { writeFileSync } from "fs";
-import { enhancePromptWithAI, generateSuggestions, autoGeneratePrompt } from "./lib/openrouter";
+import { enhancePromptWithAI, generateSuggestions, autoGeneratePrompt, structurePromptWithAI } from "./lib/openrouter";
 import { 
   enhancePromptSchema, 
   generateSuggestionsSchema,
   autoGeneratePromptSchema,
+  structurePromptSchema,
   type EnhancePromptResponse,
   type GenerateSuggestionsResponse,
-  type AutoGeneratePromptResponse 
+  type AutoGeneratePromptResponse,
+  type StructurePromptResponse 
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Debug endpoint to check API key status (remove in production)
+  app.get("/api/debug/key-status", async (_req, res) => {
+    const key = process.env.OPENROUTER_API_KEY;
+    res.json({
+      keyExists: !!key,
+      keyLength: key?.length || 0,
+      keyPrefix: key ? key.substring(0, 12) + "..." : "N/A",
+    });
+  });
+
   app.post("/api/enhance-prompt", async (req, res) => {
     try {
       const request = enhancePromptSchema.parse(req.body);
@@ -179,6 +191,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // All other errors return 500
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to auto-generate prompt" 
+      });
+    }
+  });
+
+  app.post("/api/structure-prompt", async (req, res) => {
+    try {
+      const request = structurePromptSchema.parse(req.body);
+      const structuredPrompt = await structurePromptWithAI(request);
+      
+      const response: StructurePromptResponse = {
+        structuredPrompt,
+      };
+      
+      res.json(response);
+    } catch (error) {
+      console.error("Error structuring prompt:", error);
+      
+      // Handle Zod validation errors with 400 status
+      if (error instanceof ZodError) {
+        res.status(400).json({ 
+          error: error.errors[0]?.message || "Validation failed" 
+        });
+        return;
+      }
+      
+      // All other errors return 500
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to structure prompt" 
       });
     }
   });

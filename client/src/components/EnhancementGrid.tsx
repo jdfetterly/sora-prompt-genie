@@ -10,6 +10,7 @@ interface EnhancementGridProps {
   onRefresh: () => void;
   categoryLabel: string;
   isRefreshing?: boolean;
+  processingEnhancementId?: string | null;
 }
 
 export default function EnhancementGrid({
@@ -19,6 +20,7 @@ export default function EnhancementGrid({
   onRefresh,
   categoryLabel,
   isRefreshing = false,
+  processingEnhancementId = null,
 }: EnhancementGridProps) {
   const appliedCount = enhancements.filter(e => appliedIds.has(e.id)).length;
   
@@ -61,6 +63,7 @@ export default function EnhancementGrid({
             key={enhancement.id}
             enhancement={enhancement}
             isApplied={appliedIds.has(enhancement.id)}
+            isProcessing={processingEnhancementId === enhancement.id}
             onClick={() => onEnhancementClick(enhancement)}
           />
         ))}

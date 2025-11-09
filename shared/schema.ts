@@ -53,3 +53,15 @@ export const autoGeneratePromptResponseSchema = z.object({
 });
 
 export type AutoGeneratePromptResponse = z.infer<typeof autoGeneratePromptResponseSchema>;
+
+export const structurePromptSchema = z.object({
+  currentPrompt: z.string(),
+});
+
+export type StructurePromptRequest = z.infer<typeof structurePromptSchema>;
+
+export const structurePromptResponseSchema = z.object({
+  structuredPrompt: z.string(),
+});
+
+export type StructurePromptResponse = z.infer<typeof structurePromptResponseSchema>;
