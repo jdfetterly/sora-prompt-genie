@@ -1,12 +1,12 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
-import Hero from "@/components/Hero";
+import Header from "@/components/Header";
 import PromptEditor from "@/components/PromptEditor";
 import ActionBar from "@/components/ActionBar";
 import CategoryTabs, { CORE_CATEGORIES, type CategoryId } from "@/components/CategoryTabs";
 import EnhancementGrid from "@/components/EnhancementGrid";
 import AutoGenerateButton from "@/components/AutoGenerateButton";
-import ModeToggle, { type Mode } from "@/components/ModeToggle";
+import { type Mode } from "@/components/ModeToggle";
 import PresetSelector from "@/components/PresetSelector";
 import AdvancedCategoryGroups from "@/components/AdvancedCategoryGroups";
 import Footer from "@/components/Footer";
@@ -414,11 +414,16 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Hero />
+      <Header mode={mode} onModeChange={setMode} />
       
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <div className="lg:col-span-2 space-y-4">
+            <PresetSelector 
+              onPresetSelect={handlePresetSelect}
+              disabled={enhanceMutation.isPending}
+            />
+            
             <Card className="p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Prompt Editor</h2>
@@ -476,18 +481,10 @@ export default function Home() {
           </div>
           
           <div className="lg:col-span-3 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Enhancement Options</h2>
-              <ModeToggle mode={mode} onChange={setMode} />
-            </div>
+            <h2 className="text-lg font-semibold">Enhancement Options</h2>
 
             {mode === "simple" ? (
               <>
-                <PresetSelector 
-                  onPresetSelect={handlePresetSelect}
-                  disabled={enhanceMutation.isPending}
-                />
-                
                 <div className="space-y-4">
                   <CategoryTabs value={currentCategory} onChange={setCurrentCategory} />
                   <EnhancementGrid

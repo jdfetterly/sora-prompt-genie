@@ -15,9 +15,6 @@ export default function PresetSelector({ onPresetSelect, disabled }: PresetSelec
         <Sparkles className="w-4 h-4 text-primary" />
         <h3 className="font-semibold text-sm">Quick Presets</h3>
       </div>
-      <p className="text-xs text-muted-foreground mb-3">
-        One-click cinematic styles that apply multiple enhancements
-      </p>
       <div className="grid grid-cols-2 gap-2">
         {PRESETS.map((preset) => (
           <Button
@@ -26,13 +23,10 @@ export default function PresetSelector({ onPresetSelect, disabled }: PresetSelec
             size="sm"
             onClick={() => onPresetSelect(preset)}
             disabled={disabled}
-            className="flex-col h-auto py-3 px-3 text-left items-start gap-1"
+            className="h-auto py-2 px-3"
             data-testid={`preset-${preset.id}`}
           >
             <span className="font-semibold text-xs">{preset.name}</span>
-            <span className="text-xs text-muted-foreground font-normal">
-              {preset.description}
-            </span>
           </Button>
         ))}
       </div>

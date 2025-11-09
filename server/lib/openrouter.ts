@@ -35,27 +35,70 @@ async function callOpenRouter(messages: OpenRouterMessage[]): Promise<string> {
     throw new Error("OPENROUTER_API_KEY environment variable is not set");
   }
 
-  const response = await fetch(OPENROUTER_API_URL, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": process.env.SITE_URL || "http://localhost:5000",
-    },
-    body: JSON.stringify({
-      model: OPENROUTER_MODEL,
-      messages,
-      temperature: 0.7,
-    } as OpenRouterRequest),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenRouter API error: ${response.status} ${errorText}`);
+  let response: Response;
+  try {
+    response = await fetch(OPENROUTER_API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": process.env.SITE_URL || "http://localhost:5000",
+      },
+      body: JSON.stringify({
+        model: OPENROUTER_MODEL,
+        messages,
+        temperature: 0.7,
+      } as OpenRouterRequest),
+    });
+  } catch (error) {
+    // Handle network errors (fetch can throw for network issues)
+    const errorMsg = error instanceof Error 
+      ? error.message 
+      : `Network error: ${String(error)}`;
+    console.error("Fetch network error:", errorMsg);
+    throw new Error(`Failed to connect to OpenRouter API: ${errorMsg}`);
   }
 
-  const data = await response.json() as OpenRouterResponse;
-  return data.choices[0].message.content;
+  if (!response.ok) {
+    let errorText = "";
+    try {
+      errorText = await response.text();
+    } catch {
+      errorText = response.statusText;
+    }
+    const errorMessage = `OpenRouter API error: ${response.status} ${errorText}`;
+    console.error("OpenRouter API Error Details:", {
+      status: response.status,
+      statusText: response.statusText,
+      body: errorText,
+      url: OPENROUTER_API_URL,
+      model: OPENROUTER_MODEL,
+    });
+    throw new Error(errorMessage);
+  }
+
+  let data: OpenRouterResponse;
+  try {
+    data = await response.json() as OpenRouterResponse;
+  } catch (error) {
+    console.error("Failed to parse OpenRouter response as JSON:", error);
+    const text = await response.text();
+    console.error("Raw response:", text);
+    throw new Error(`Invalid JSON response from OpenRouter API: ${text.substring(0, 200)}`);
+  }
+
+  if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+    console.error("Invalid OpenRouter response structure:", JSON.stringify(data, null, 2));
+    throw new Error("OpenRouter API returned invalid response structure");
+  }
+
+  const content = data.choices[0].message.content;
+  if (!content) {
+    console.error("OpenRouter response missing content:", JSON.stringify(data, null, 2));
+    throw new Error("OpenRouter API response missing message content");
+  }
+
+  return content;
 }
 
 export async function enhancePromptWithAI(request: EnhancePromptRequest): Promise<string> {
@@ -121,6 +164,12 @@ Return ONLY the enhanced prompt text, nothing else.`;
 }
 
 export async function generateSuggestions(category: string, count: number, currentPrompt?: string): Promise<Suggestion[]> {
+  console.log("=== generateSuggestions START ===");
+  console.log("generateSuggestions called with:", { category, count, currentPrompt: currentPrompt?.substring(0, 50) });
+  console.log("OPENROUTER_API_KEY exists:", !!OPENROUTER_API_KEY);
+  console.log("OPENROUTER_API_KEY length:", OPENROUTER_API_KEY?.length || 0);
+  console.log("OPENROUTER_MODEL:", OPENROUTER_MODEL);
+  
   const systemPrompt = `You are a creative cinematography consultant specializing in Sora AI video generation. Generate diverse, professional enhancement suggestions for video prompts.
 
 Each suggestion should be:
@@ -130,7 +179,9 @@ Each suggestion should be:
 - Professionally described
 - Complementary to what's already described in the prompt
 
-Return suggestions as a JSON array with this structure:
+IMPORTANT: Return ONLY a valid JSON array with no markdown formatting, no code blocks, no explanations. The response must be parseable JSON.
+
+Return suggestions as a JSON array with this exact structure:
 [
   {
     "title": "Brief, catchy title (3-5 words)",
@@ -146,6 +197,11 @@ Return suggestions as a JSON array with this structure:
     "depth-of-field": "focus techniques and depth of field effects",
     "motion-timing": "timing, pacing, and motion choreography",
     "color-palette": "color schemes and palette choices",
+    "weather": "weather conditions and atmospheric effects",
+    "time-of-day": "time of day lighting and atmospheric conditions",
+    "mood": "emotional atmosphere and mood settings",
+    "composition": "compositional techniques and framing rules",
+    "texture": "texture and surface qualities",
   };
 
   const categoryDesc = categoryDescriptions[category] || "cinematic enhancements";
@@ -165,18 +221,62 @@ Generate ${count} creative and contextually relevant suggestions for ${categoryD
     { role: "user", content: userPrompt },
   ];
 
-  const response = await callOpenRouter(messages);
+  console.log("Calling OpenRouter API...");
+  let response: string;
+  try {
+    response = await callOpenRouter(messages);
+    console.log("OpenRouter API call successful, response length:", response.length);
+  } catch (error) {
+    console.error("Error in callOpenRouter:", error);
+    throw error;
+  }
   
   try {
-    const suggestions = JSON.parse(response);
-    return suggestions.map((s: any, index: number) => ({
+    // Try to extract JSON from the response (AI might wrap it in markdown code blocks)
+    let jsonString = response.trim();
+    
+    // Remove markdown code blocks if present
+    if (jsonString.startsWith("```")) {
+      const lines = jsonString.split("\n");
+      // Remove first line (```json or ```)
+      lines.shift();
+      // Remove last line (```)
+      if (lines[lines.length - 1].trim() === "```") {
+        lines.pop();
+      }
+      jsonString = lines.join("\n");
+    }
+    
+    const suggestions = JSON.parse(jsonString);
+    
+    // Validate the response structure
+    if (!Array.isArray(suggestions)) {
+      throw new Error("AI response is not an array");
+    }
+    
+    // Validate each suggestion has required fields
+    const validSuggestions = suggestions.filter((s: any) => {
+      return s && typeof s.title === "string" && typeof s.description === "string";
+    });
+    
+    if (validSuggestions.length === 0) {
+      throw new Error("No valid suggestions found in AI response");
+    }
+    
+    return validSuggestions.map((s: any, index: number) => ({
       id: `ai-${category}-${Date.now()}-${index}`,
-      title: s.title,
-      description: s.description,
+      title: s.title.trim(),
+      description: s.description.trim(),
       category,
     }));
   } catch (error) {
     console.error("Failed to parse AI suggestions:", error);
-    throw new Error("Failed to generate suggestions");
+    console.error("AI response was:", response);
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : String(error);
+    const fullError = `Failed to parse AI suggestions: ${errorMessage}. Response preview: ${response.substring(0, 500)}`;
+    console.error(fullError);
+    throw new Error(fullError);
   }
 }
