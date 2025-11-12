@@ -2,7 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { ZodError } from "zod";
 import { writeFileSync } from "fs";
-import { enhancePromptWithAI, generateSuggestions, autoGeneratePrompt, structurePromptWithAI } from "./lib/openrouter";
+import { enhancePromptWithAI, autoGeneratePrompt, structurePromptWithAI } from "./lib/openrouter";
+import { generateSuggestionsAgent } from "./agents/suggestionAgent";
 import { 
   enhancePromptSchema, 
   generateSuggestionsSchema,
@@ -59,11 +60,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const request = generateSuggestionsSchema.parse(req.body);
       console.log("Parsed request:", request);
       
-      const suggestions = await generateSuggestions(
-        request.category, 
-        request.count,
-        request.currentPrompt
-      );
+      const suggestions = await generateSuggestionsAgent({
+        category: request.category,
+        count: request.count,
+        currentPrompt: request.currentPrompt,
+      });
       
       console.log("Successfully generated", suggestions.length, "suggestions");
       
