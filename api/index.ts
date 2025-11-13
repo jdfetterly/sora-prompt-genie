@@ -1,10 +1,10 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "../server/routes";
-import { serveStatic } from "../server/vite";
-import { logger } from "../server/utils/logger";
-import { formatErrorResponse } from "../server/utils/errorFormatter";
-import { setupSecurityMiddleware } from "../server/middleware/security";
+import { registerRoutes } from "../server/routes.js";
+import { serveStatic } from "../server/vite.js";
+import { logger } from "../server/utils/logger.js";
+import { formatErrorResponse } from "../server/utils/errorFormatter.js";
+import { setupSecurityMiddleware } from "../server/middleware/security.js";
 
 // Initialize Sentry as early as possible
 // Use dynamic import with error handling for Vercel compatibility

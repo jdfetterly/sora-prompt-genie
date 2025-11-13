@@ -2,8 +2,8 @@ import { performance } from "node:perf_hooks";
 import { z } from "zod";
 import { suggestionAgentInputSchema, suggestionAgentOutputSchema, type SuggestionAgentInput } from "@shared/agents";
 import type { Suggestion } from "@shared/schema";
-import { LangflowClient } from "../services/llm/langflowClient";
-import { generateSuggestionsWithOpenRouter } from "../lib/openrouter";
+import { LangflowClient } from "../services/llm/langflowClient.js";
+import { generateSuggestionsWithOpenRouter } from "../lib/openrouter.js";
 
 const langflowClient = new LangflowClient({
   baseUrl: process.env.LANGFLOW_BASE_URL,

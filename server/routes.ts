@@ -1,17 +1,17 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { ZodError } from "zod";
-import { enhancePromptWithAI, autoGeneratePrompt, structurePromptWithAI } from "./lib/openrouter";
-import { generateSuggestionsAgent } from "./agents/suggestionAgent";
+import { enhancePromptWithAI, autoGeneratePrompt, structurePromptWithAI } from "./lib/openrouter.js";
+import { generateSuggestionsAgent } from "./agents/suggestionAgent.js";
 import { 
   generalLimiter, 
   enhancePromptLimiter,
   generateSuggestionsLimiter,
   autoGeneratePromptLimiter,
   structurePromptLimiter
-} from "./middleware/rateLimit";
-import { logger } from "./utils/logger";
-import { formatErrorResponse } from "./utils/errorFormatter";
+} from "./middleware/rateLimit.js";
+import { logger } from "./utils/logger.js";
+import { formatErrorResponse } from "./utils/errorFormatter.js";
 import { 
   enhancePromptSchema, 
   generateSuggestionsSchema,
@@ -26,11 +26,15 @@ import {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint (excluded from rate limiting for monitoring)
   app.get("/api/health", (_req, res) => {
+    const hasApiKey = !!process.env.OPENROUTER_API_KEY && process.env.OPENROUTER_API_KEY.trim() !== "";
     res.status(200).json({
       status: "ok",
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: process.env.NODE_ENV || "development",
+      // Include API key status without exposing the actual key
+      apiKeyConfigured: hasApiKey,
+      apiKeyPrefix: hasApiKey ? process.env.OPENROUTER_API_KEY?.substring(0, 10) + "..." : null,
     });
   });
 
@@ -40,6 +44,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI-powered endpoints use per-endpoint rate limiting (24-hour windows)
   app.post("/api/enhance-prompt", enhancePromptLimiter, async (req, res) => {
     try {
+      // Pre-flight check for API key before processing
+      if (!process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY.trim() === "") {
+        logger.error("Enhance-prompt called but OPENROUTER_API_KEY is missing");
+        return res.status(500).json({
+          error: "Server configuration error",
+          details: "OPENROUTER_API_KEY environment variable is not configured. Please check your Vercel project settings.",
+        });
+      }
+
       const request = enhancePromptSchema.parse(req.body);
       const enhancedPrompt = await enhancePromptWithAI(request);
       
@@ -59,6 +72,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         return;
       }
+      
+      // Log the full error for debugging
+      logger.error("Error in enhance-prompt endpoint:", {
+        error: error instanceof Error ? {
+          message: error.message,
+          name: error.name,
+          stack: error.stack,
+        } : error,
+      });
       
       const errorResponse = formatErrorResponse(error, "Failed to enhance prompt");
       res.status(500).json(errorResponse);

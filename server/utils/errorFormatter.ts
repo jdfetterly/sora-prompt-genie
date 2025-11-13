@@ -1,4 +1,4 @@
-import { logger } from "./logger";
+import { logger } from "./logger.js";
 // Import Sentry captureException with error handling
 // Use a lazy import pattern to handle cases where Sentry module might not be available
 let captureExceptionFn: ((error: Error, context?: Record<string, any>) => void) | null = null;

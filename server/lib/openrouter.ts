@@ -1,11 +1,11 @@
 import { type EnhancePromptRequest, type Suggestion, type StructurePromptRequest } from "@shared/schema";
-import { logger } from "../utils/logger";
+import { logger } from "../utils/logger.js";
 import { 
   autoAuthorPromptV1, 
   promptEnhancerPromptV1, 
   promptStructuringPromptV1,
   suggestionAgentPromptV1,
-} from "../agents/prompts";
+} from "../agents/prompts/index.js";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -39,8 +39,23 @@ interface OpenRouterResponse {
 }
 
 async function callOpenRouter(messages: OpenRouterMessage[]): Promise<string> {
-  if (!OPENROUTER_API_KEY) {
-    throw new Error("OPENROUTER_API_KEY environment variable is not set");
+  // Check for API key with more detailed error messages
+  if (!OPENROUTER_API_KEY || OPENROUTER_API_KEY.trim() === "") {
+    const errorMsg = "OPENROUTER_API_KEY environment variable is not set or is empty";
+    logger.error("[OpenRouter] API key check failed:", {
+      hasKey: !!OPENROUTER_API_KEY,
+      keyLength: OPENROUTER_API_KEY?.length || 0,
+      keyPrefix: OPENROUTER_API_KEY?.substring(0, 10) || "N/A",
+      nodeEnv: process.env.NODE_ENV,
+    });
+    throw new Error(errorMsg);
+  }
+  
+  // Validate API key format (OpenRouter keys typically start with "sk-or-v1-")
+  if (!OPENROUTER_API_KEY.startsWith("sk-or-v1-") && !OPENROUTER_API_KEY.startsWith("sk-or-v1")) {
+    logger.warn("[OpenRouter] API key format may be invalid:", {
+      keyPrefix: OPENROUTER_API_KEY.substring(0, 10),
+    });
   }
   
   // Log API call in development only
