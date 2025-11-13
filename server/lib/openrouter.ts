@@ -53,7 +53,7 @@ async function callOpenRouter(messages: OpenRouterMessage[]): Promise<string> {
       headers: {
         "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": process.env.SITE_URL || "http://localhost:5000",
+        "HTTP-Referer": process.env.SITE_URL || "http://localhost:5173",
       },
       body: JSON.stringify({
         model: OPENROUTER_MODEL,

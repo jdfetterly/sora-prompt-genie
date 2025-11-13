@@ -53,7 +53,7 @@ export default function EnhancementCard({ enhancement, isApplied, isProcessing =
               </p>
             </span>
           </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-xs z-50">
+          <TooltipContent side="top" className="max-w-xs">
             <p>{enhancement.description}</p>
           </TooltipContent>
         </Tooltip>

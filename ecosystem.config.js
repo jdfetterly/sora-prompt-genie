@@ -24,7 +24,7 @@ module.exports = {
       exec_mode: "fork", // Use "cluster" for load balancing across CPU cores
       env: {
         NODE_ENV: "production",
-        PORT: 5000,
+        PORT: 5173,
       },
       // Logging configuration
       error_file: "./logs/pm2-error.log",

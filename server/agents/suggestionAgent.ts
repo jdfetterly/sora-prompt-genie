@@ -33,7 +33,7 @@ export async function generateSuggestionsAgent(input: SuggestionAgentInput): Pro
         current_prompt: parsedInput.currentPrompt ?? "",
         applied_categories: parsedInput.appliedCategories ?? [],
         focus_tags: parsedInput.focusTags ?? [],
-        mode: parsedInput.mode ?? "simple",
+        mode: parsedInput.mode ?? "advanced",
         metadata: parsedInput.metadata ?? {},
       },
       inputType: "structured",

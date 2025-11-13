@@ -40,7 +40,7 @@ export default function EnhancementGrid({
           size="sm"
           onClick={onRefresh}
           disabled={isRefreshing}
-          className="gap-2"
+          className="gap-2 refresh-button-pulse"
           data-testid="button-refresh-suggestions"
         >
           {isRefreshing ? (

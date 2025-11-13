@@ -31,7 +31,7 @@ export default function PresetSelector({ onPresetSelect, disabled }: PresetSelec
                 <span className="font-semibold text-xs">{preset.name}</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-xs z-50">
+            <TooltipContent side="top" className="max-w-xs">
               <p className="font-medium mb-1">{preset.name}</p>
               <p className="text-xs">{preset.description}</p>
             </TooltipContent>

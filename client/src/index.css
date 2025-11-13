@@ -317,6 +317,17 @@
   }
 }
 
+@keyframes slow-pulse-purple {
+  0%, 100% {
+    border-color: hsl(262 83% 58% / 0.3);
+    box-shadow: 0 0 0 0 hsl(262 83% 58% / 0.4);
+  }
+  50% {
+    border-color: hsl(262 83% 58% / 0.7);
+    box-shadow: 0 0 0 4px hsl(262 83% 58% / 0.2);
+  }
+}
+
 @keyframes text-fade-in {
   from {
     opacity: 0.7;
@@ -501,13 +512,18 @@
   pointer-events: none;
 }
 
+.refresh-button-pulse {
+  animation: slow-pulse-purple 3s ease-in-out infinite;
+}
+
 /* Respect prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
   .prompt-enhancing::before,
   .sparkle,
   .character-count-enhancing,
   .prompt-enhancing-complete textarea,
-  .enhancement-card-processing {
+  .enhancement-card-processing,
+  .refresh-button-pulse {
     animation: none;
   }
   

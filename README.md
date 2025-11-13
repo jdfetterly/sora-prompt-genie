@@ -80,7 +80,7 @@ npm run db:push
 npm run dev
 ```
 
-The application will be available at `http://localhost:5000` (or your configured port).
+The application will be available at `http://localhost:5173` (or your configured port).
 
 ### Build for Production
 

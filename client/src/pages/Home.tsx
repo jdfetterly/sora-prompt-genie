@@ -3,10 +3,8 @@ import { useMutation } from "@tanstack/react-query";
 import Header from "@/components/Header";
 import PromptEditor from "@/components/PromptEditor";
 import ActionBar from "@/components/ActionBar";
-import CategoryTabs, { CORE_CATEGORIES, type CategoryId } from "@/components/CategoryTabs";
-import EnhancementGrid from "@/components/EnhancementGrid";
+import { type CategoryId } from "@/components/CategoryTabs";
 import AutoGenerateButton from "@/components/AutoGenerateButton";
-import { type Mode } from "@/components/ModeToggle";
 import PresetSelector from "@/components/PresetSelector";
 import AdvancedCategoryGroups from "@/components/AdvancedCategoryGroups";
 import AppliedFilters from "@/components/AppliedFilters";
@@ -40,7 +38,6 @@ export default function Home() {
   const [appliedEnhancements, setAppliedEnhancements] = useState<Set<string>>(new Set());
   const [currentCategory, setCurrentCategory] = useState<CategoryId>("camera-angles");
   const [customSuggestions, setCustomSuggestions] = useState<Partial<Record<CategoryId, Enhancement[]>>>({});
-  const [mode, setMode] = useState<Mode>("simple");
   const [refreshingCategories, setRefreshingCategories] = useState<Set<CategoryId>>(new Set());
   // Track the prompt state before each category's enhancement was applied
   const [promptBeforeCategory, setPromptBeforeCategory] = useState<Partial<Record<CategoryId, string>>>({});
@@ -83,9 +80,14 @@ export default function Home() {
       });
     },
     onSuccess: (data, variables) => {
+      // Always limit style category to 6 suggestions
+      const suggestions = variables.category === "style" 
+        ? data.suggestions.slice(0, 6)
+        : data.suggestions;
+      
       setCustomSuggestions(prev => ({
         ...prev,
-        [variables.category]: data.suggestions,
+        [variables.category]: suggestions,
       }));
       setRefreshingCategories(prev => {
         const next = new Set(prev);
@@ -331,7 +333,7 @@ export default function Home() {
     
     generateSuggestionsMutation.mutate({
       category: targetCategory,
-      count: 8,
+      count: targetCategory === "style" ? 6 : 8,
       currentPrompt,
     });
   };
@@ -454,9 +456,6 @@ export default function Home() {
   const wordCount = useMemo(() => {
     return currentPrompt.trim().split(/\s+/).filter(word => word.length > 0).length;
   }, [currentPrompt]);
-
-  const currentCategoryLabel = CORE_CATEGORIES.find(c => c.id === currentCategory)?.label || "";
-  const currentEnhancements = customSuggestions[currentCategory] || ENHANCEMENTS[currentCategory] || [];
   
   // Create refreshing state map for advanced mode
   const refreshingState = Object.fromEntries(
@@ -465,7 +464,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header mode={mode} onModeChange={setMode} />
+      <Header />
       
       <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -552,32 +551,15 @@ export default function Home() {
               onRemove={handleEnhancementClick}
             />
 
-            {mode === "simple" ? (
-              <>
-                <div className="space-y-4">
-                  <CategoryTabs value={currentCategory} onChange={setCurrentCategory} />
-                  <EnhancementGrid
-                    enhancements={currentEnhancements}
-                    appliedIds={appliedEnhancements}
-                    onEnhancementClick={handleEnhancementClick}
-                    onRefresh={() => handleRefresh()}
-                    categoryLabel={currentCategoryLabel}
-                    isRefreshing={refreshingCategories.has(currentCategory)}
-                    processingEnhancementId={processingEnhancementId}
-                  />
-                </div>
-              </>
-            ) : (
-              <AdvancedCategoryGroups
-                enhancements={ENHANCEMENTS}
-                customSuggestions={customSuggestions}
-                appliedIds={appliedEnhancements}
-                onEnhancementClick={handleEnhancementClick}
-                onRefresh={handleRefresh}
-                isRefreshing={refreshingState}
-                processingEnhancementId={processingEnhancementId}
-              />
-            )}
+            <AdvancedCategoryGroups
+              enhancements={ENHANCEMENTS}
+              customSuggestions={customSuggestions}
+              appliedIds={appliedEnhancements}
+              onEnhancementClick={handleEnhancementClick}
+              onRefresh={handleRefresh}
+              isRefreshing={refreshingState}
+              processingEnhancementId={processingEnhancementId}
+            />
           </div>
         </div>
       </div>

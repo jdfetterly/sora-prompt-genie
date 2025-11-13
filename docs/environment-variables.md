@@ -16,9 +16,9 @@ This document describes all environment variables used by SoraPromptGenie.
 
 #### `PORT`
 - **Required**: No
-- **Default**: `5000`
+- **Default**: `5173`
 - **Description**: Port number to run the server on
-- **Example**: `5000`
+- **Example**: `5173`
 
 #### `NODE_ENV`
 - **Required**: No
@@ -31,14 +31,14 @@ This document describes all environment variables used by SoraPromptGenie.
 
 #### `SITE_URL`
 - **Required**: No (recommended for production)
-- **Default**: `http://localhost:5000` (development)
+- **Default**: `http://localhost:5173` (development)
 - **Description**: Your production site URL, used for CORS and API referrer headers
 - **Example**: `https://sorapromptgenie.com`
 
 #### `ALLOWED_ORIGINS`
 - **Required**: No (recommended for production)
 - **Default**: 
-  - Development: `http://localhost:5000,http://localhost:5173`
+  - Development: `http://localhost:5173`
   - Production: `SITE_URL` or `https://sorapromptgenie.com`
 - **Description**: Comma-separated list of allowed CORS origins
 - **Example**: `https://sorapromptgenie.com,https://www.sorapromptgenie.com`

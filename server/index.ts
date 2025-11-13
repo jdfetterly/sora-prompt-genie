@@ -155,9 +155,9 @@ app.use((req, res, next) => {
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Default to 5000 if not specified.
+  // Default to 5173 if not specified.
   // this serves both the API and the client.
-  const port = parseInt(process.env.PORT || '5000', 10);
+  const port = parseInt(process.env.PORT || '5173', 10);
   server.listen(port, "0.0.0.0", () => {
     logger.info(`Server started on port ${port}`);
     log(`serving on port ${port}`);

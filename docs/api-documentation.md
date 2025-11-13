@@ -4,7 +4,7 @@ This document provides comprehensive API documentation for SoraPromptGenie.
 
 ## Base URL
 
-- **Development**: `http://localhost:5000`
+- **Development**: `http://localhost:5173`
 - **Production**: `https://your-domain.com` (configure via `SITE_URL` environment variable)
 
 ## Authentication
@@ -284,7 +284,7 @@ All endpoints follow a consistent error response format:
 ### Example: Enhancing a Prompt
 
 ```bash
-curl -X POST http://localhost:5000/api/enhance-prompt \
+curl -X POST http://localhost:5173/api/enhance-prompt \
   -H "Content-Type: application/json" \
   -d '{
     "currentPrompt": "A cat walking in a garden",
@@ -299,7 +299,7 @@ curl -X POST http://localhost:5000/api/enhance-prompt \
 ### Example: Generating Suggestions
 
 ```bash
-curl -X POST http://localhost:5000/api/generate-suggestions \
+curl -X POST http://localhost:5173/api/generate-suggestions \
   -H "Content-Type: application/json" \
   -d '{
     "category": "Camera Angles",
@@ -311,7 +311,7 @@ curl -X POST http://localhost:5000/api/generate-suggestions \
 ### Example: Auto-Generating a Prompt
 
 ```bash
-curl -X POST http://localhost:5000/api/auto-generate-prompt \
+curl -X POST http://localhost:5173/api/auto-generate-prompt \
   -H "Content-Type: application/json" \
   -d '{
     "basicPrompt": "A cat walking in a garden"

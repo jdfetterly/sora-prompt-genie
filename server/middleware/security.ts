@@ -29,7 +29,7 @@ export function setupSecurityMiddleware(app: Express): void {
     ? process.env.ALLOWED_ORIGINS.split(",").map(origin => origin.trim())
     : process.env.NODE_ENV === "production"
     ? [process.env.SITE_URL || "https://sorapromptgenie.com"]
-    : ["http://localhost:5000", "http://localhost:5173"]; // Default dev origins
+    : ["http://localhost:5173"]; // Default dev origins
 
   app.use(
     cors({

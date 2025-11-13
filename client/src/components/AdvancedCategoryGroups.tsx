@@ -92,7 +92,7 @@ export default function AdvancedCategoryGroups({
               size="default"
               onClick={() => handleTopLevelClick(group.id)}
               className={cn(
-                "gap-2",
+                "gap-2 w-[140px]",
                 isSelected 
                   ? "bg-primary text-primary-foreground border-primary" 
                   : "bg-background text-foreground"
@@ -120,7 +120,7 @@ export default function AdvancedCategoryGroups({
                 size="sm"
                 onClick={() => handleSubcategoryClick(category.id)}
                 className={cn(
-                  "gap-2",
+                  "gap-2 w-[180px]",
                   isSelected 
                     ? "bg-primary text-primary-foreground border-primary" 
                     : "bg-background text-foreground"
@@ -136,19 +136,27 @@ export default function AdvancedCategoryGroups({
       )}
 
       {/* EnhancementGrid for selected subcategory */}
-      {selectedSubcategory && (
-        <div>
-          <EnhancementGrid
-            enhancements={customSuggestions[selectedSubcategory] || enhancements[selectedSubcategory] || []}
-            appliedIds={appliedIds}
-            onEnhancementClick={onEnhancementClick}
-            onRefresh={() => onRefresh(selectedSubcategory)}
-            categoryLabel={selectedGroup?.categories.find(c => c.id === selectedSubcategory)?.label || ""}
-            isRefreshing={isRefreshing[selectedSubcategory] || false}
-            processingEnhancementId={processingEnhancementId}
-          />
-        </div>
-      )}
+      {selectedSubcategory && (() => {
+        const allEnhancements = customSuggestions[selectedSubcategory] || enhancements[selectedSubcategory] || [];
+        // Always limit style category to 6 options
+        const displayEnhancements = selectedSubcategory === "style" 
+          ? allEnhancements.slice(0, 6)
+          : allEnhancements;
+        
+        return (
+          <div>
+            <EnhancementGrid
+              enhancements={displayEnhancements}
+              appliedIds={appliedIds}
+              onEnhancementClick={onEnhancementClick}
+              onRefresh={() => onRefresh(selectedSubcategory)}
+              categoryLabel={selectedGroup?.categories.find(c => c.id === selectedSubcategory)?.label || ""}
+              isRefreshing={isRefreshing[selectedSubcategory] || false}
+              processingEnhancementId={processingEnhancementId}
+            />
+          </div>
+        );
+      })()}
     </div>
   );
 }

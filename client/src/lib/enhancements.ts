@@ -120,8 +120,6 @@ export const ENHANCEMENTS: Record<CategoryId, Enhancement[]> = {
     { id: "s-4", title: "Black & White Film Noir", description: "High contrast monochrome with deep shadows", category: "style" },
     { id: "s-5", title: "Wes Anderson Symmetry", description: "Perfectly centered, pastel-colored compositions", category: "style" },
     { id: "s-6", title: "Blade Runner Cyberpunk", description: "Neon-soaked, rain-slicked dystopian atmosphere", category: "style" },
-    { id: "s-7", title: "16mm Documentary", description: "Raw, authentic handheld with natural grain", category: "style" },
-    { id: "s-8", title: "Music Video Energy", description: "Dynamic cuts, color grading, stylized visuals", category: "style" },
   ],
   "depth-of-field": [
     { id: "dof-1", title: "Shallow Focus", description: "Subject sharp, background beautifully blurred (bokeh)", category: "depth-of-field" },

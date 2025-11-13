@@ -12,7 +12,7 @@ info:
     name: MIT
 
 servers:
-  - url: http://localhost:5000
+  - url: http://localhost:5173
     description: Development server
   - url: https://your-domain.com
     description: Production server (configure via SITE_URL)
