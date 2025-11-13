@@ -1,4 +1,4 @@
-import { type EnhancePromptRequest, type Suggestion, type StructurePromptRequest } from "@shared/schema";
+import { type EnhancePromptRequest, type Suggestion, type StructurePromptRequest } from "../../shared/schema.js";
 import { logger } from "../utils/logger.js";
 import { 
   autoAuthorPromptV1, 

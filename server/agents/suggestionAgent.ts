@@ -1,7 +1,7 @@
 import { performance } from "node:perf_hooks";
 import { z } from "zod";
-import { suggestionAgentInputSchema, suggestionAgentOutputSchema, type SuggestionAgentInput } from "@shared/agents";
-import type { Suggestion } from "@shared/schema";
+import { suggestionAgentInputSchema, suggestionAgentOutputSchema, type SuggestionAgentInput } from "../../shared/agents/index.js";
+import type { Suggestion } from "../../shared/schema.js";
 import { LangflowClient } from "../services/llm/langflowClient.js";
 import { generateSuggestionsWithOpenRouter } from "../lib/openrouter.js";
 
