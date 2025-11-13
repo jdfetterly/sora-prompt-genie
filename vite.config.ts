@@ -29,6 +29,21 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    // Production optimizations
+    minify: "esbuild", // Fast minification
+    sourcemap: false, // Disable sourcemaps in production for smaller bundle
+    rollupOptions: {
+      output: {
+        // Code splitting for better caching
+        manualChunks: {
+          vendor: ["react", "react-dom"],
+          router: ["wouter"],
+          query: ["@tanstack/react-query"],
+        },
+      },
+    },
+    // Chunk size warnings threshold (500kb)
+    chunkSizeWarningLimit: 500,
   },
   server: {
     fs: {

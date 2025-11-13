@@ -1,0 +1,371 @@
+openapi: 3.0.3
+info:
+  title: SoraPromptGenie API
+  description: |
+    API for AI-powered video prompt enhancement and generation.
+    This API provides endpoints for enhancing video prompts with cinematic elements,
+    generating contextual suggestions, and auto-generating complete prompts.
+  version: 1.0.0
+  contact:
+    name: SoraPromptGenie Support
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:5000
+    description: Development server
+  - url: https://your-domain.com
+    description: Production server (configure via SITE_URL)
+
+tags:
+  - name: Health
+    description: Server health and status endpoints
+  - name: AI Endpoints
+    description: AI-powered prompt enhancement and generation endpoints
+
+paths:
+  /api/health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check the health status of the API server
+      operationId: getHealth
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/enhance-prompt:
+    post:
+      tags:
+        - AI Endpoints
+      summary: Enhance a prompt
+      description: Enhance a video prompt with a selected enhancement (camera angle, lighting, style, etc.)
+      operationId: enhancePrompt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnhancePromptRequest'
+      responses:
+        '200':
+          description: Prompt enhanced successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnhancePromptResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/generate-suggestions:
+    post:
+      tags:
+        - AI Endpoints
+      summary: Generate suggestions
+      description: Generate contextual AI-powered suggestions for a specific enhancement category
+      operationId: generateSuggestions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateSuggestionsRequest'
+      responses:
+        '200':
+          description: Suggestions generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateSuggestionsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/auto-generate-prompt:
+    post:
+      tags:
+        - AI Endpoints
+      summary: Auto-generate prompt
+      description: Automatically generate a complete, enhanced video prompt from a basic prompt
+      operationId: autoGeneratePrompt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutoGeneratePromptRequest'
+      responses:
+        '200':
+          description: Prompt generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoGeneratePromptResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/structure-prompt:
+    post:
+      tags:
+        - AI Endpoints
+      summary: Structure prompt
+      description: Structure and refine an existing prompt for better clarity and organization
+      operationId: structurePrompt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StructurePromptRequest'
+      responses:
+        '200':
+          description: Prompt structured successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructurePromptResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+        - uptime
+        - environment
+      properties:
+        status:
+          type: string
+          example: ok
+          description: Server status
+        timestamp:
+          type: string
+          format: date-time
+          example: '2024-01-01T12:00:00.000Z'
+          description: Current server time
+        uptime:
+          type: number
+          example: 3600.5
+          description: Server uptime in seconds
+        environment:
+          type: string
+          example: production
+          description: Current environment
+
+    Enhancement:
+      type: object
+      required:
+        - title
+        - description
+        - category
+      properties:
+        title:
+          type: string
+          example: Low Angle Shot
+          description: Title of the enhancement
+        description:
+          type: string
+          example: Shot from a low angle looking up
+          description: Description of the enhancement
+        category:
+          type: string
+          example: Camera Angles
+          description: Category of the enhancement
+
+    EnhancePromptRequest:
+      type: object
+      required:
+        - currentPrompt
+        - enhancement
+      properties:
+        currentPrompt:
+          type: string
+          example: A cat walking in a garden
+          description: The current video prompt to enhance
+        enhancement:
+          $ref: '#/components/schemas/Enhancement'
+
+    EnhancePromptResponse:
+      type: object
+      required:
+        - enhancedPrompt
+      properties:
+        enhancedPrompt:
+          type: string
+          example: A cat walking in a garden, shot from a low angle looking up...
+          description: The AI-enhanced prompt
+
+    GenerateSuggestionsRequest:
+      type: object
+      required:
+        - category
+      properties:
+        category:
+          type: string
+          example: Camera Angles
+          description: The enhancement category
+        count:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 8
+          example: 8
+          description: Number of suggestions to generate
+        currentPrompt:
+          type: string
+          example: A cat walking in a garden
+          description: Current prompt for contextual suggestions
+
+    Suggestion:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - category
+      properties:
+        id:
+          type: string
+          example: suggestion-1
+          description: Unique identifier for the suggestion
+        title:
+          type: string
+          example: Low Angle Shot
+          description: Title of the suggestion
+        description:
+          type: string
+          example: Shot from a low angle looking up, creating a sense of grandeur
+          description: Description of the suggestion
+        category:
+          type: string
+          example: Camera Angles
+          description: Category of the suggestion
+
+    GenerateSuggestionsResponse:
+      type: object
+      required:
+        - suggestions
+      properties:
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Suggestion'
+
+    AutoGeneratePromptRequest:
+      type: object
+      required:
+        - basicPrompt
+      properties:
+        basicPrompt:
+          type: string
+          minLength: 1
+          example: A cat walking in a garden
+          description: Basic prompt (minimum 3 words)
+
+    AutoGeneratePromptResponse:
+      type: object
+      required:
+        - generatedPrompt
+      properties:
+        generatedPrompt:
+          type: string
+          example: A graceful cat walking through a sun-dappled garden...
+          description: The AI-generated complete prompt
+
+    StructurePromptRequest:
+      type: object
+      required:
+        - currentPrompt
+      properties:
+        currentPrompt:
+          type: string
+          example: A cat walking in a garden with nice lighting
+          description: The prompt to structure
+
+    StructurePromptResponse:
+      type: object
+      required:
+        - structuredPrompt
+      properties:
+        structuredPrompt:
+          type: string
+          example: A graceful cat walking through a lush garden...
+          description: The structured and refined prompt
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          example: Validation failed
+          description: Error message
+
+  responses:
+    BadRequest:
+      description: Invalid request body or validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Validation failed
+
+    TooManyRequests:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Too many requests, please try again later
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: Maximum number of requests allowed
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Number of requests remaining
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+            format: int64
+          description: Timestamp when the rate limit resets
+
+    InternalServerError:
+      description: Server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Internal server error
+

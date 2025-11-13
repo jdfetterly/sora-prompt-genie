@@ -1,4 +1,4 @@
-import { Github, Linkedin, Twitter, BookOpen, Globe, Mail } from "lucide-react";
+import { Github, Linkedin, Twitter, BookOpen, Globe, Mail, Heart } from "lucide-react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -71,7 +71,7 @@ export default function Footer() {
           {/* Right: Credit */}
           <div className="text-sm text-gray-400 flex items-center gap-1 order-3 md:order-none">
             Designed & Built with{" "}
-            <span className="text-red-500">❤️</span> by JD
+            <Heart className="w-4 h-4 text-red-500" /> by JD
           </div>
         </div>
       </div>

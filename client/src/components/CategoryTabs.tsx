@@ -11,7 +11,8 @@ import {
   Sun,
   Grid3X3,
   Heart,
-  Shapes
+  Shapes,
+  Video
 } from "lucide-react";
 
 // All available categories
@@ -42,22 +43,26 @@ export const CORE_CATEGORIES = [
 export const CATEGORY_GROUPS = [
   { 
     id: "camera", 
-    label: "📹 Camera", 
+    label: "Camera", 
+    icon: Video,
     categories: ALL_CATEGORIES.filter(c => c.group === "camera")
   },
   { 
     id: "visuals", 
-    label: "💡 Visuals", 
+    label: "Visuals", 
+    icon: Lightbulb,
     categories: ALL_CATEGORIES.filter(c => c.group === "visuals")
   },
   { 
     id: "atmosphere", 
-    label: "🎨 Atmosphere", 
+    label: "Atmosphere", 
+    icon: Palette,
     categories: ALL_CATEGORIES.filter(c => c.group === "atmosphere")
   },
   { 
     id: "polish", 
-    label: "✨ Polish", 
+    label: "Polish", 
+    icon: Sparkles,
     categories: ALL_CATEGORIES.filter(c => c.group === "polish")
   },
 ] as const;

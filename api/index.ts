@@ -1,0 +1,125 @@
+import "dotenv/config";
+// Initialize Sentry as early as possible
+import { initSentry } from "../server/utils/sentry";
+initSentry();
+
+import express, { type Request, Response, NextFunction } from "express";
+import { registerRoutes } from "../server/routes";
+import { serveStatic } from "../server/vite";
+import { logger } from "../server/utils/logger";
+import { formatErrorResponse } from "../server/utils/errorFormatter";
+import { setupSecurityMiddleware } from "../server/middleware/security";
+
+/**
+ * Validates required environment variables
+ */
+function validateEnvironmentVariables(): void {
+  const requiredVars: Array<{ name: string; description: string }> = [
+    {
+      name: "OPENROUTER_API_KEY",
+      description: "OpenRouter API key for AI-powered prompt generation",
+    },
+  ];
+
+  const missingVars: string[] = [];
+
+  for (const { name, description } of requiredVars) {
+    if (!process.env[name] || process.env[name]?.trim() === "") {
+      missingVars.push(`${name} (${description})`);
+    }
+  }
+
+  if (missingVars.length > 0) {
+    logger.error("Missing required environment variables:", {
+      missing: missingVars,
+    });
+    throw new Error(`Missing required environment variables: ${missingVars.join(", ")}`);
+  }
+
+  logger.info("Environment variable validation passed");
+}
+
+// Validate environment variables
+try {
+  validateEnvironmentVariables();
+} catch (error) {
+  logger.error("Environment validation failed:", error);
+  // Don't throw in Vercel - let it handle the error
+}
+
+const app = express();
+
+declare module 'http' {
+  interface IncomingMessage {
+    rawBody: unknown
+  }
+}
+
+// Security middleware (must be before other middleware)
+setupSecurityMiddleware(app);
+
+app.use(express.json({
+  verify: (req, _res, buf) => {
+    req.rawBody = buf;
+  }
+}));
+app.use(express.urlencoded({ extended: false }));
+
+// Request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  const path = req.path;
+
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    if (path.startsWith("/api")) {
+      logger.info(`${req.method} ${path} ${res.statusCode} in ${duration}ms`);
+    }
+  });
+
+  next();
+});
+
+// Initialize routes and static serving
+let appInitialized = false;
+
+async function initializeApp() {
+  if (appInitialized) return;
+  
+  // Register routes (returns Server but we don't need it for Vercel)
+  await registerRoutes(app);
+
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    // Only handle errors if response hasn't been sent yet
+    if (res.headersSent) {
+      return _next(err);
+    }
+    
+    const status = err.status || err.statusCode || 500;
+    const errorResponse = formatErrorResponse(err, "Internal Server Error");
+    
+    res.status(status).json(errorResponse);
+  });
+
+  // Serve static files in production
+  serveStatic(app);
+  
+  appInitialized = true;
+}
+
+// Initialize app on first request
+app.use(async (req, res, next) => {
+  if (!appInitialized) {
+    try {
+      await initializeApp();
+    } catch (error) {
+      logger.error("Failed to initialize app:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
+  next();
+});
+
+// Export the app for Vercel
+export default app;
+

@@ -9,7 +9,7 @@
 
 Sora Prompt Builder helps you create cinematic video prompts through an intuitive dual-mode interface. Start with a basic idea and progressively enhance it with AI-powered suggestions across 12 enhancement categories, or use quick presets for instant cinematic styles.
 
-## ✨ Features
+## Features
 
 ### Dual-Mode Interface
 - **Simple Mode**: Quick presets and 4 core categories for rapid prompt creation
@@ -41,7 +41,7 @@ Sora Prompt Builder helps you create cinematic video prompts through an intuitiv
 - **Smart Merging**: Intelligent enhancement stacking that preserves creative intent
 - **Real-time Editing**: Live prompt preview with undo/redo history
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Node.js 18+ and npm
@@ -89,7 +89,7 @@ npm run build
 npm start
 ```
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 - **React 18** with TypeScript
@@ -109,7 +109,7 @@ npm start
 ### Database
 - **PostgreSQL** via Neon serverless driver
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 SoraPromptGenie/
@@ -130,7 +130,7 @@ SoraPromptGenie/
 └── dist/                  # Production build output
 ```
 
-## 🎯 Usage
+## Usage
 
 ### Simple Mode (Default)
 1. Enter a basic prompt (minimum 3 words) or use **Auto-Generate**
@@ -142,14 +142,14 @@ SoraPromptGenie/
 ### Advanced Mode
 1. Switch to Advanced Mode using the toggle
 2. Explore **12 enhancement categories** organized into 4 groups:
-   - 📹 **Camera** (Angles, Motion)
-   - 💡 **Visuals** (Lighting, Color, Depth of Field)
-   - 🎨 **Atmosphere** (Weather, Time of Day, Mood)
-   - ✨ **Polish** (Style, Motion/Timing, Composition, Texture)
+   - **Camera** (Angles, Motion) - Video icon
+   - **Visuals** (Lighting, Color, Depth of Field) - Lightbulb icon
+   - **Atmosphere** (Weather, Time of Day, Mood) - Palette icon
+   - **Polish** (Style, Motion/Timing, Composition, Texture) - Sparkles icon
 3. Use the refresh button on each category for new AI-generated suggestions
 4. Stack multiple enhancements to build complex prompts
 
-## 🔧 Development
+## Development
 
 ### Available Scripts
 
@@ -166,7 +166,7 @@ SoraPromptGenie/
 - **API Routes**: Express routes in `server/routes.ts`
 - **Shared Types**: TypeScript types and Zod schemas in `shared/schema.ts`
 
-## 🎨 Design System
+## Design System
 
 - **Typography**: Inter for UI, JetBrains Mono for code/prompts
 - **Colors**: Custom CSS variables with light/dark mode support
@@ -174,7 +174,7 @@ SoraPromptGenie/
 - **Elevation**: Subtle shadows and opacity layers
 - **Responsive**: Mobile-first design with breakpoint at 768px
 
-## 📝 API Endpoints
+## API Endpoints
 
 ### `POST /api/enhance-prompt`
 Enhance a prompt with selected enhancements.
@@ -212,15 +212,15 @@ Generate contextual suggestions for a specific category.
 }
 ```
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Built with [shadcn/ui](https://ui.shadcn.com/)
 - AI powered by [OpenRouter](https://openrouter.ai/) and Anthropic Claude 3.5 Sonnet

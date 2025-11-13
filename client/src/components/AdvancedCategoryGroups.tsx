@@ -84,6 +84,7 @@ export default function AdvancedCategoryGroups({
       <div className="flex flex-wrap gap-2">
         {CATEGORY_GROUPS.map((group) => {
           const isSelected = selectedTopLevel === group.id;
+          const Icon = group.icon;
           
           return (
             <Button
@@ -99,6 +100,7 @@ export default function AdvancedCategoryGroups({
               )}
               data-testid={`top-level-button-${group.id}`}
             >
+              <Icon className="w-4 h-4" />
               <span>{group.label}</span>
             </Button>
           );

@@ -1,4 +1,5 @@
 import { type EnhancePromptRequest, type Suggestion, type StructurePromptRequest } from "@shared/schema";
+import { logger } from "../utils/logger";
 import { 
   autoAuthorPromptV1, 
   promptEnhancerPromptV1, 
@@ -10,11 +11,12 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 // Model configuration - use cheaper models to reduce costs
 // Options: 
+//   - google/gemini-2.5-flash-lite (very cheap, current default)
 //   - anthropic/claude-3-haiku (cheapest Claude, ~$0.25/$1M input tokens)
 //   - google/gemini-flash-1.5 (very cheap, ~$0.075/$1M input tokens)
 //   - openai/gpt-3.5-turbo (cheap, ~$0.5/$1M input tokens)
-//   - anthropic/claude-3.5-sonnet (expensive, ~$3/$1M input tokens - current default)
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-3-haiku";
+//   - anthropic/claude-3.5-sonnet (expensive, ~$3/$1M input tokens)
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash-lite";
 
 interface OpenRouterMessage {
   role: "system" | "user" | "assistant";
@@ -41,9 +43,8 @@ async function callOpenRouter(messages: OpenRouterMessage[]): Promise<string> {
     throw new Error("OPENROUTER_API_KEY environment variable is not set");
   }
   
-  // Debug logging (key prefix only, not full key)
-  const keyPrefix = OPENROUTER_API_KEY.substring(0, Math.min(10, OPENROUTER_API_KEY.length));
-  console.log(`[OpenRouter] Making API call with key prefix: ${keyPrefix}... (length: ${OPENROUTER_API_KEY.length})`);
+  // Log API call in development only
+  logger.debug("[OpenRouter] Making API call");
 
   let response: Response;
   try {
@@ -65,7 +66,7 @@ async function callOpenRouter(messages: OpenRouterMessage[]): Promise<string> {
     const errorMsg = error instanceof Error 
       ? error.message 
       : `Network error: ${String(error)}`;
-    console.error("Fetch network error:", errorMsg);
+    logger.error("Fetch network error:", { error: errorMsg });
     throw new Error(`Failed to connect to OpenRouter API: ${errorMsg}`);
   }
 
@@ -101,7 +102,7 @@ async function callOpenRouter(messages: OpenRouterMessage[]): Promise<string> {
       errorMessage = `OpenRouter API error: ${response.status} ${errorText}`;
     }
     
-    console.error("OpenRouter API Error Details:", {
+    logger.error("OpenRouter API Error:", {
       status: response.status,
       statusText: response.statusText,
       body: errorText,
@@ -116,20 +117,26 @@ async function callOpenRouter(messages: OpenRouterMessage[]): Promise<string> {
   try {
     data = await response.json() as OpenRouterResponse;
   } catch (error) {
-    console.error("Failed to parse OpenRouter response as JSON:", error);
     const text = await response.text();
-    console.error("Raw response:", text);
+    logger.error("Failed to parse OpenRouter response as JSON:", {
+      error,
+      rawResponse: text.substring(0, 500), // Log first 500 chars
+    });
     throw new Error(`Invalid JSON response from OpenRouter API: ${text.substring(0, 200)}`);
   }
 
   if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
-    console.error("Invalid OpenRouter response structure:", JSON.stringify(data, null, 2));
+    logger.error("Invalid OpenRouter response structure:", {
+      response: data,
+    });
     throw new Error("OpenRouter API returned invalid response structure");
   }
 
   const content = data.choices[0].message.content;
   if (!content) {
-    console.error("OpenRouter response missing content:", JSON.stringify(data, null, 2));
+    logger.error("OpenRouter response missing content:", {
+      response: data,
+    });
     throw new Error("OpenRouter API response missing message content");
   }
 
@@ -207,11 +214,7 @@ Return ONLY the structured prompt text, nothing else.`
 }
 
 export async function generateSuggestionsWithOpenRouter(category: string, count: number, currentPrompt?: string): Promise<Suggestion[]> {
-  console.log("=== generateSuggestions START ===");
-  console.log("generateSuggestions called with:", { category, count, currentPrompt: currentPrompt?.substring(0, 50) });
-  console.log("OPENROUTER_API_KEY exists:", !!OPENROUTER_API_KEY);
-  console.log("OPENROUTER_API_KEY length:", OPENROUTER_API_KEY?.length || 0);
-  console.log("OPENROUTER_MODEL:", OPENROUTER_MODEL);
+  logger.debug("generateSuggestions called", { category, count });
   
   const systemPrompt = `${suggestionAgentPromptV1.systemPrompt}
 
@@ -257,13 +260,12 @@ Generate ${count} creative and contextually relevant suggestions for ${categoryD
     { role: "user", content: userPrompt },
   ];
 
-  console.log("Calling OpenRouter API...");
   let response: string;
   try {
     response = await callOpenRouter(messages);
-    console.log("OpenRouter API call successful, response length:", response.length);
+    logger.debug("OpenRouter API call successful");
   } catch (error) {
-    console.error("Error in callOpenRouter:", error);
+    logger.error("Error in callOpenRouter:", { error });
     throw error;
   }
   
@@ -306,14 +308,14 @@ Generate ${count} creative and contextually relevant suggestions for ${categoryD
       category,
     }));
   } catch (error) {
-    console.error("Failed to parse AI suggestions:", error);
-    console.error("AI response was:", response);
     const errorMessage = error instanceof Error 
       ? error.message 
       : String(error);
-    const fullError = `Failed to parse AI suggestions: ${errorMessage}. Response preview: ${response.substring(0, 500)}`;
-    console.error(fullError);
-    throw new Error(fullError);
+    logger.error("Failed to parse AI suggestions:", {
+      error: errorMessage,
+      responsePreview: response.substring(0, 500),
+    });
+    throw new Error(`Failed to parse AI suggestions: ${errorMessage}. Response preview: ${response.substring(0, 500)}`);
   }
 }
 
