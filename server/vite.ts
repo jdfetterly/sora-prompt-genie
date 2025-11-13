@@ -70,18 +70,79 @@ export async function setupVite(app: Express, server: Server) {
 export function serveStatic(app: Express) {
   // Resolve path relative to project root (not server directory)
   // In production, static files are in dist/public
-  const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
+  // In Vercel, try multiple possible paths
+  const possiblePaths = [
+    path.resolve(import.meta.dirname, "..", "dist", "public"),
+    path.resolve(process.cwd(), "dist", "public"),
+    path.join(process.cwd(), "dist", "public"),
+  ];
 
-  if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
-    );
+  let distPath: string | null = null;
+  for (const possiblePath of possiblePaths) {
+    try {
+      if (fs.existsSync(possiblePath)) {
+        distPath = possiblePath;
+        break;
+      }
+    } catch {
+      // Continue to next path
+    }
   }
 
-  app.use(express.static(distPath));
-
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
-  });
+  if (distPath) {
+    app.use(express.static(distPath));
+    
+    // fall through to index.html if the file doesn't exist (SPA routing)
+    app.use("*", (_req, res) => {
+      // Skip API routes - they're handled by registerRoutes
+      if (_req.path.startsWith("/api")) {
+        return res.status(404).json({ error: "API route not found" });
+      }
+      
+      const indexPath = path.resolve(distPath!, "index.html");
+      try {
+        if (fs.existsSync(indexPath)) {
+          res.sendFile(indexPath);
+        } else {
+          // In Vercel, static files might be served separately
+          // Return a simple HTML response for SPA routing
+          res.status(200).send(`
+            <!DOCTYPE html>
+            <html>
+              <head><title>Loading...</title></head>
+              <body>
+                <div id="root"></div>
+                <script>window.location.reload();</script>
+              </body>
+            </html>
+          `);
+        }
+      } catch (error) {
+        console.error("Error serving index.html:", error);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    });
+  } else {
+    // In Vercel serverless environment, static files are served by Vercel's CDN
+    // We only handle API routes and SPA fallback for non-API routes
+    app.use("*", (_req, res) => {
+      // API routes are handled by registerRoutes, so this shouldn't be reached for /api/*
+      // For non-API routes, Vercel should serve static files, but if they reach here,
+      // return index.html content for SPA routing
+      if (!_req.path.startsWith("/api")) {
+        res.status(200).setHeader("Content-Type", "text/html").send(`
+          <!DOCTYPE html>
+          <html>
+            <head><title>Loading...</title></head>
+            <body>
+              <div id="root"></div>
+              <script>window.location.reload();</script>
+            </body>
+          </html>
+        `);
+      } else {
+        res.status(404).json({ error: "API route not found" });
+      }
+    });
+  }
 }
