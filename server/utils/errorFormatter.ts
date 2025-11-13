@@ -1,5 +1,35 @@
 import { logger } from "./logger";
-import { captureException } from "./sentry";
+// Import Sentry captureException with error handling
+// Use a lazy import pattern to handle cases where Sentry module might not be available
+let captureExceptionFn: ((error: Error, context?: Record<string, any>) => void) | null = null;
+let sentryImportPromise: Promise<void> | null = null;
+
+async function getCaptureException(): Promise<((error: Error, context?: Record<string, any>) => void) | null> {
+  if (captureExceptionFn !== null) {
+    return captureExceptionFn;
+  }
+  
+  // If we're already trying to import, wait for that
+  if (sentryImportPromise) {
+    await sentryImportPromise;
+    return captureExceptionFn;
+  }
+  
+  // Try to import Sentry dynamically
+  sentryImportPromise = import("./sentry")
+    .then((sentryModule) => {
+      if (sentryModule.captureException) {
+        captureExceptionFn = sentryModule.captureException;
+      }
+    })
+    .catch(() => {
+      // Sentry not available - that's okay, we'll just not use it
+      captureExceptionFn = null;
+    });
+  
+  await sentryImportPromise;
+  return captureExceptionFn;
+}
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -19,12 +49,26 @@ export function sanitizeError(error: unknown): {
       stack: error.stack,
       name: error.name,
     });
-    // Capture in Sentry for production monitoring
-    captureException(error);
+    // Capture in Sentry for production monitoring (if available)
+    // Don't await - let it happen in background to avoid blocking
+    getCaptureException().then((captureFn) => {
+      if (captureFn) {
+        captureFn(error);
+      }
+    }).catch(() => {
+      // Ignore errors during Sentry capture
+    });
   } else {
     logger.error("Unknown error occurred:", { error });
-    // Capture unknown errors as messages
-    captureException(new Error(String(error)));
+    // Capture unknown errors as messages (if Sentry is available)
+    // Don't await - let it happen in background
+    getCaptureException().then((captureFn) => {
+      if (captureFn) {
+        captureFn(new Error(String(error)));
+      }
+    }).catch(() => {
+      // Ignore errors during Sentry capture
+    });
   }
 
   // Return sanitized error for client
@@ -39,9 +83,10 @@ export function sanitizeError(error: unknown): {
 
     // In production, return only safe error messages
     // Check for common error types and provide user-friendly messages
-    if (error.message.includes("OPENROUTER_API_KEY")) {
+    if (error.message.includes("OPENROUTER_API_KEY") || error.message.includes("environment variable")) {
       return {
-        error: "API configuration error. Please contact support.",
+        error: "Server configuration error",
+        details: "The API key is not properly configured. Please check your Vercel environment variables.",
       };
     }
 

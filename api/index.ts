@@ -1,14 +1,38 @@
 import "dotenv/config";
-// Initialize Sentry as early as possible
-import { initSentry } from "../server/utils/sentry";
-initSentry();
-
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "../server/routes";
 import { serveStatic } from "../server/vite";
 import { logger } from "../server/utils/logger";
 import { formatErrorResponse } from "../server/utils/errorFormatter";
 import { setupSecurityMiddleware } from "../server/middleware/security";
+
+// Initialize Sentry as early as possible
+// Use dynamic import with error handling for Vercel compatibility
+// This prevents the function from crashing if the module can't be resolved
+let sentryInitialized = false;
+try {
+  // Use dynamic import to handle potential module resolution issues
+  const initSentryPromise = import("../server/utils/sentry").then((sentryModule) => {
+    if (sentryModule.initSentry) {
+      sentryModule.initSentry();
+      sentryInitialized = true;
+    }
+  });
+  // Don't await - let it initialize in the background
+  initSentryPromise.catch((error) => {
+    // Only log if it's not a module resolution error
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    if (!errorMsg.includes("Cannot find module") && !errorMsg.includes("ERR_MODULE_NOT_FOUND")) {
+      console.warn("Sentry initialization warning:", errorMsg);
+    }
+  });
+} catch (error) {
+  // Handle synchronous import errors
+  const errorMsg = error instanceof Error ? error.message : String(error);
+  if (!errorMsg.includes("Cannot find module") && !errorMsg.includes("ERR_MODULE_NOT_FOUND")) {
+    console.warn("Sentry import warning:", errorMsg);
+  }
+}
 
 /**
  * Validates required environment variables
