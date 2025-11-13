@@ -39,11 +39,11 @@ export default function Home() {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [appliedEnhancements, setAppliedEnhancements] = useState<Set<string>>(new Set());
   const [currentCategory, setCurrentCategory] = useState<CategoryId>("camera-angles");
-  const [customSuggestions, setCustomSuggestions] = useState<Record<string, Enhancement[]>>({});
+  const [customSuggestions, setCustomSuggestions] = useState<Partial<Record<CategoryId, Enhancement[]>>>({});
   const [mode, setMode] = useState<Mode>("simple");
   const [refreshingCategories, setRefreshingCategories] = useState<Set<CategoryId>>(new Set());
   // Track the prompt state before each category's enhancement was applied
-  const [promptBeforeCategory, setPromptBeforeCategory] = useState<Record<CategoryId, string>>({});
+  const [promptBeforeCategory, setPromptBeforeCategory] = useState<Partial<Record<CategoryId, string>>>({});
   // Track which enhancement is currently being processed
   const [processingEnhancementId, setProcessingEnhancementId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -180,15 +180,16 @@ export default function Home() {
       setAppliedEnhancements(newApplied);
       
       // Restore prompt to state before this category's enhancement was applied
-      if (promptBeforeCategory[enhancement.category] !== undefined) {
-        const restoredPrompt = promptBeforeCategory[enhancement.category];
+      const categoryKey = enhancement.category as CategoryId;
+      if (promptBeforeCategory[categoryKey] !== undefined) {
+        const restoredPrompt = promptBeforeCategory[categoryKey];
         isAIUpdate.current = true;
         addToHistory(restoredPrompt);
         setCurrentPrompt(restoredPrompt);
         // Clear the tracking for this category since no enhancement is applied
         setPromptBeforeCategory(prev => {
           const updated = { ...prev };
-          delete updated[enhancement.category];
+          delete updated[categoryKey];
           return updated;
         });
       }
@@ -196,7 +197,8 @@ export default function Home() {
     }
     
     // Check if there's already an enhancement from the same category
-    const categoryEnhancements = customSuggestions[enhancement.category] || ENHANCEMENTS[enhancement.category] || [];
+    const categoryKey = enhancement.category as CategoryId;
+    const categoryEnhancements = customSuggestions[categoryKey] || ENHANCEMENTS[categoryKey] || [];
     const existingEnhancementId = Array.from(newApplied).find(id => {
       // Check if this ID belongs to an enhancement from the same category
       return categoryEnhancements.some(e => e.id === id);
@@ -213,15 +215,15 @@ export default function Home() {
     
     // Determine the base prompt: if replacing, use the prompt before the previous enhancement
     // Otherwise, use the current prompt
-    const basePrompt = existingEnhancementId && promptBeforeCategory[enhancement.category] !== undefined
-      ? promptBeforeCategory[enhancement.category]
+    const basePrompt = existingEnhancementId && promptBeforeCategory[categoryKey] !== undefined
+      ? promptBeforeCategory[categoryKey]
       : currentPrompt;
     
     // Store the prompt state before applying this category's enhancement (if not already stored)
-    if (!promptBeforeCategory[enhancement.category]) {
+    if (!promptBeforeCategory[categoryKey]) {
       setPromptBeforeCategory(prev => ({
         ...prev,
-        [enhancement.category]: currentPrompt,
+        [categoryKey]: currentPrompt,
       }));
     }
     
@@ -358,15 +360,16 @@ export default function Home() {
       presetEnhancementIds.push(enhancementId);
       
       // Determine base prompt: use the prompt before this category's enhancement if replacing
-      const basePrompt = promptBeforeCategory[enhancement.category] !== undefined
-        ? promptBeforeCategory[enhancement.category]
+      const categoryKey = enhancement.category as CategoryId;
+      const basePrompt = promptBeforeCategory[categoryKey] !== undefined
+        ? promptBeforeCategory[categoryKey]!
         : updatedPrompt;
       
       // Store the prompt state before applying this category's enhancement (if not already stored)
-      if (!promptBeforeCategory[enhancement.category]) {
+      if (!promptBeforeCategory[categoryKey]) {
         setPromptBeforeCategory(prev => ({
           ...prev,
-          [enhancement.category]: updatedPrompt,
+          [categoryKey]: updatedPrompt,
         }));
       }
       

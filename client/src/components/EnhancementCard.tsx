@@ -2,12 +2,13 @@ import { Card } from "@/components/ui/card";
 import { Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import type { CategoryId } from "./CategoryTabs";
 
 export interface Enhancement {
   id: string;
   title: string;
   description: string;
-  category: string;
+  category: CategoryId;
 }
 
 interface EnhancementCardProps {

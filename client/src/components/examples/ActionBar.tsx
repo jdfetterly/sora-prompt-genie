@@ -7,6 +7,7 @@ export default function ActionBarExample() {
         onUndo={() => console.log('Undo')}
         onRedo={() => console.log('Redo')}
         onCopy={() => console.log('Copy')}
+        onStructure={() => console.log('Structure')}
         canUndo={true}
         canRedo={false}
       />

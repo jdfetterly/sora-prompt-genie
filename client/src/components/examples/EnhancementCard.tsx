@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import EnhancementCard from '../EnhancementCard';
+import type { CategoryId } from '../CategoryTabs';
 
 export default function EnhancementCardExample() {
   const [applied, setApplied] = useState(false);
@@ -8,7 +9,7 @@ export default function EnhancementCardExample() {
     id: '1',
     title: 'Wide Establishing Shot',
     description: 'Eye-level wide angle capturing the full scene context',
-    category: 'Camera Angles'
+    category: 'camera-angles' as CategoryId
   };
   
   return (

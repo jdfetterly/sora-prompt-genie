@@ -40,11 +40,13 @@ function validateEnvironmentVariables(): void {
 }
 
 // Validate environment variables
+// In Vercel, we validate but don't exit - let the request handler show a proper error
+let envValidationError: Error | null = null;
 try {
   validateEnvironmentVariables();
 } catch (error) {
   logger.error("Environment validation failed:", error);
-  // Don't throw in Vercel - let it handle the error
+  envValidationError = error as Error;
 }
 
 const app = express();
@@ -109,12 +111,25 @@ async function initializeApp() {
 
 // Initialize app on first request
 app.use(async (req, res, next) => {
+  // Check for environment validation errors first
+  if (envValidationError) {
+    logger.error("Request blocked due to missing environment variables");
+    return res.status(500).json({
+      error: "Server configuration error",
+      message: envValidationError.message,
+      details: "Missing required environment variables. Please check Vercel project settings."
+    });
+  }
+
   if (!appInitialized) {
     try {
       await initializeApp();
     } catch (error) {
       logger.error("Failed to initialize app:", error);
-      return res.status(500).json({ error: "Internal server error" });
+      return res.status(500).json({ 
+        error: "Internal server error",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   }
   next();
