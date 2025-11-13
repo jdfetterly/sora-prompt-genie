@@ -89,6 +89,18 @@ npm run build
 npm start
 ```
 
+### Deployment Process
+
+1. Make sure your changes are committed and pushed (Vercel will deploy whatever is in the repo when the deploy command runs).  
+2. Run the scripted release flow:
+   ```bash
+   npm run deploy:prod
+   ```
+   This command runs `predeploy` (typecheck, lint, tests), builds production artifacts with `vercel build --prod --yes`, then promotes the artifact via `vercel deploy --prebuilt --prod --yes`. It exits immediately if any step fails so partial deployments never ship.
+3. When the script finishes, follow the prompts it prints (load the SPA, exercise the key API flows, review Vercel logs, notify the team). The reminders ensure every deploy includes the same manual verification.
+
+> If you leave Git auto-deploys enabled in Vercel, they’ll still trigger on every push using the repo’s configuration (now including `installCommand: npm install --include=dev`). For the safest results, prefer the scripted flow above or disable auto-deploys so production only updates when `npm run deploy:prod` succeeds.
+
 ## Tech Stack
 
 ### Frontend
@@ -229,4 +241,3 @@ This project is licensed under the MIT License.
 ---
 
 **Note**: This project requires an OpenRouter API key to function. Sign up at [openrouter.ai](https://openrouter.ai/) to get started.
-

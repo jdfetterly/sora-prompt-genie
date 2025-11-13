@@ -49,7 +49,7 @@ export default function Home() {
   const { toast } = useToast();
   
   // Refs for debounced history tracking
-  const pendingHistorySave = useRef<NodeJS.Timeout | null>(null);
+  const pendingHistorySave = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isAIUpdate = useRef(false);
 
   const enhanceMutation = useMutation({
@@ -332,7 +332,7 @@ export default function Home() {
     generateSuggestionsMutation.mutate({
       category: targetCategory,
       count: 8,
-      currentPrompt: currentPrompt,
+      currentPrompt,
     });
   };
 

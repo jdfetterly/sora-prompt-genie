@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { CATEGORY_GROUPS } from "./CategoryTabs";
+import { CATEGORY_GROUPS, type CategoryId, type CategoryGroupId } from "./CategoryTabs";
 import EnhancementGrid from "./EnhancementGrid";
 import type { Enhancement } from "./EnhancementCard";
-import type { CategoryId, CategoryGroupId } from "./CategoryTabs";
 import { cn } from "@/lib/utils";
 
 interface AdvancedCategoryGroupsProps {

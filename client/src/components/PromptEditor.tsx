@@ -72,6 +72,16 @@ export default function PromptEditor({ value, onChange, placeholder, isEnhancing
           disabled={isEnhancing}
         />
       </div>
+      
+      <div className="text-xs text-muted-foreground space-y-1">
+        <p className="font-medium">How to use:</p>
+        <ul className="list-disc list-inside space-y-0.5 ml-1">
+          <li>Type your initial prompt in the box above</li>
+          <li>Browse enhancement categories and click cards to apply them</li>
+          <li>Use the Structure button to organize your prompt</li>
+          <li>Copy your final prompt when ready</li>
+        </ul>
+      </div>
     </div>
   );
 }

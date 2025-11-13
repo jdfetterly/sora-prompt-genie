@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import request from 'supertest';
 import express, { type Express } from 'express';
-import { generalLimiter, aiEndpointLimiter } from '../../../server/middleware/rateLimit';
+import { generalLimiter, enhancePromptLimiter } from '../../../server/middleware/rateLimit';
 
 describe('Rate Limiting Middleware', () => {
   let app: Express;
@@ -105,9 +105,9 @@ describe('Rate Limiting Middleware', () => {
     });
   });
 
-  describe('aiEndpointLimiter', () => {
+  describe('enhancePromptLimiter', () => {
     it('should allow requests within the limit', async () => {
-      app.post('/api/ai-endpoint', aiEndpointLimiter, (_req, res) => {
+      app.post('/api/ai-endpoint', enhancePromptLimiter, (_req, res) => {
         res.json({ message: 'success' });
       });
 
@@ -120,7 +120,7 @@ describe('Rate Limiting Middleware', () => {
     });
 
     it('should include rate limit headers', async () => {
-      app.post('/api/ai-endpoint', aiEndpointLimiter, (_req, res) => {
+      app.post('/api/ai-endpoint', enhancePromptLimiter, (_req, res) => {
         res.json({ message: 'success' });
       });
 
@@ -133,15 +133,15 @@ describe('Rate Limiting Middleware', () => {
     });
 
     it('should have stricter limit than general limiter', () => {
-      // Verify that aiEndpointLimiter is configured (it's a middleware function)
+      // Verify that enhancePromptLimiter is configured (it's a middleware function)
       // The actual configuration is internal, but we can verify it exists and is a function
-      expect(aiEndpointLimiter).toBeDefined();
-      expect(typeof aiEndpointLimiter).toBe('function');
+      expect(enhancePromptLimiter).toBeDefined();
+      expect(typeof enhancePromptLimiter).toBe('function');
       expect(generalLimiter).toBeDefined();
       expect(typeof generalLimiter).toBe('function');
       
       // Both limiters should be different instances
-      expect(aiEndpointLimiter).not.toBe(generalLimiter);
+      expect(enhancePromptLimiter).not.toBe(generalLimiter);
     });
 
     it('should reject requests exceeding the AI endpoint limit', async () => {
@@ -173,7 +173,7 @@ describe('Rate Limiting Middleware', () => {
     });
 
     it('should count all requests, not just failed ones', async () => {
-      // aiEndpointLimiter has skipSuccessfulRequests: false
+      // enhancePromptLimiter has skipSuccessfulRequests: false
       // This means successful requests also count toward the limit
       const testLimiter = require('express-rate-limit')({
         windowMs: 15 * 60 * 1000,
@@ -181,7 +181,7 @@ describe('Rate Limiting Middleware', () => {
         message: 'Too many AI requests',
         standardHeaders: true,
         legacyHeaders: false,
-        skipSuccessfulRequests: false, // Same as aiEndpointLimiter
+        skipSuccessfulRequests: false, // Same as enhancePromptLimiter
       });
 
       app.post('/api/ai-endpoint', testLimiter, (_req, res) => {
@@ -204,13 +204,13 @@ describe('Rate Limiting Middleware', () => {
   describe('Rate Limiter Configuration', () => {
     it('should export both limiters', () => {
       expect(generalLimiter).toBeDefined();
-      expect(aiEndpointLimiter).toBeDefined();
+      expect(enhancePromptLimiter).toBeDefined();
       expect(typeof generalLimiter).toBe('function');
-      expect(typeof aiEndpointLimiter).toBe('function');
+      expect(typeof enhancePromptLimiter).toBe('function');
     });
 
     it('should be different middleware instances', () => {
-      expect(generalLimiter).not.toBe(aiEndpointLimiter);
+      expect(generalLimiter).not.toBe(enhancePromptLimiter);
     });
 
     it('should apply rate limiting correctly', async () => {

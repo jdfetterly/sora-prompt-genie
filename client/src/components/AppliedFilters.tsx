@@ -1,8 +1,7 @@
 import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Enhancement } from "./EnhancementCard";
-import type { CategoryId } from "./CategoryTabs";
-import { ALL_CATEGORIES } from "./CategoryTabs";
+import { ALL_CATEGORIES, type CategoryId } from "./CategoryTabs";
 
 interface AppliedFiltersProps {
   appliedIds: Set<string>;
