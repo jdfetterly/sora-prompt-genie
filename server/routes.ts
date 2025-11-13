@@ -21,7 +21,7 @@ import {
   type GenerateSuggestionsResponse,
   type AutoGeneratePromptResponse,
   type StructurePromptResponse 
-} from "../../shared/schema.js";
+} from "../shared/schema.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint (excluded from rate limiting for monitoring)
