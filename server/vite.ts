@@ -3,7 +3,6 @@ import fs from "fs";
 import path from "path";
 import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
-import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
 
 const viteLogger = createLogger();
@@ -20,6 +19,23 @@ export function log(message: string, source = "express") {
 }
 
 export async function setupVite(app: Express, server: Server) {
+  // Lazy import vite.config only when needed (development only)
+  // This prevents the import from failing in serverless environments
+  let viteConfig;
+  try {
+    // Try .ts extension first (for tsx in development), then .js (for compiled)
+    try {
+      viteConfig = await import("../vite.config.ts");
+    } catch {
+      viteConfig = await import("../vite.config.js");
+    }
+  } catch (error) {
+    throw new Error(
+      `Failed to load vite.config: ${error instanceof Error ? error.message : String(error)}. ` +
+      `This function should only be called in development mode.`
+    );
+  }
+  
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
@@ -27,7 +43,7 @@ export async function setupVite(app: Express, server: Server) {
   };
 
   const vite = await createViteServer({
-    ...viteConfig,
+    ...(viteConfig.default || viteConfig),
     configFile: false,
     customLogger: {
       ...viteLogger,
